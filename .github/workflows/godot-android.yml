@@ -44,19 +44,31 @@ jobs:
           unzip -q /tmp/templates.tpz -d /tmp/godot-templates
           cp -a /tmp/godot-templates/templates/. "$HOME/.local/share/godot/export_templates/4.3.stable/"
 
+      - name: Configure Godot Android export
+        run: |
+          mkdir -p "$HOME/.config/godot"
+          cat > "$HOME/.config/godot/editor_settings-4.tres" <<EOF
+          [gd_resource type="EditorSettings" format=3]
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          EOF
+
       - name: Validate project scripts
         run: |
+          set -o pipefail
           godot --version
-          godot --headless --path NEBULIA_Godot --editor --quit
+          godot --headless --path NEBULIA_Godot --editor --quit 2>&1 | tee /tmp/godot-import.log
+          if grep -E "SCRIPT ERROR:|Parse Error:|Failed to load script" /tmp/godot-import.log; then
+            echo "Godot script validation failed."
+            exit 1
+          fi
 
       - name: Export debug APK
-        env:
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
-          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
-          JAVA_HOME: ${{ env.JAVA_HOME }}
         run: |
           mkdir -p build
-          godot --headless --path NEBULIA_Godot --export-debug "Android" build/NEBULIA-debug.apk
+          godot --headless --path NEBULIA_Godot --export-debug "Android" build/NEBULIA-debug.apk 2>&1 | tee /tmp/godot-export.log
+          test -s build/NEBULIA-debug.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
