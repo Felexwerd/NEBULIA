@@ -19,13 +19,29 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check Unity license configuration
+      - name: Validate Unity project and license secrets
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_LICENSING_SERVER: ${{ secrets.UNITY_LICENSING_SERVER }}
         run: |
-          if [ -z "$UNITY_LICENSE" ] && [ -z "$UNITY_SERIAL" ]; then
-            echo "ERROR: Unity license is not configured. Add UNITY_LICENSE (recommended) or UNITY_SERIAL in Settings > Secrets and variables > Actions. No Unity compilation was attempted."
+          if [ ! -f UnityProject/ProjectSettings/ProjectSettings.asset ]; then
+            echo "ERROR: UnityProject/ProjectSettings/ProjectSettings.asset is missing from the repository."
+            echo "The Unity project settings need to be restored/committed before a reliable Android build can run."
+            exit 1
+          fi
+
+          if [ -n "$UNITY_LICENSING_SERVER" ]; then
+            echo "Unity licensing server configured."
+          elif [ -n "$UNITY_EMAIL" ] && [ -n "$UNITY_PASSWORD" ] && { [ -n "$UNITY_LICENSE" ] || [ -n "$UNITY_SERIAL" ]; }; then
+            echo "Unity license credentials configured."
+          else
+            echo "ERROR: Unity license activation is incomplete."
+            echo "Add GitHub Actions secrets UNITY_EMAIL and UNITY_PASSWORD, plus either UNITY_LICENSE (recommended for a Personal license activation file) or UNITY_SERIAL."
+            echo "Alternatively, configure UNITY_LICENSING_SERVER."
+            echo "No Unity compilation was attempted."
             exit 1
           fi
 
@@ -36,6 +52,7 @@ jobs:
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_LICENSING_SERVER: ${{ secrets.UNITY_LICENSING_SERVER }}
         with:
           projectPath: UnityProject
           unityVersion: 6000.3.0f1
