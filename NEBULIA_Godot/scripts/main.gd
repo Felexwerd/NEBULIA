@@ -5,10 +5,12 @@ extends Control
 const BG := Color("#0b1024")
 const PANEL := Color("#151d3a")
 const PANEL_2 := Color("#202b50")
+const PANEL_DARK := Color("#10172d")
 const GOLD := Color("#f5cb78")
 const CYAN := Color("#80e6f2")
 const MUTED := Color("#aab5d8")
 const PINK := Color("#f18acb")
+const GREEN := Color("#a7edc5")
 
 var gold := 1200
 var gems := 180
