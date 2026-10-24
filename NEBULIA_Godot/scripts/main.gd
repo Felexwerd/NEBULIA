@@ -34,6 +34,10 @@ var battle_log := ""
 var active_enemy_hp := 90
 var player_turn := true
 var team_power := 0
+var income_claimed_at: int = 0
+var income_value_label: Label
+var income_collect_button: Button
+var last_income_display_second: int = -1
 
 var root_box: VBoxContainer
 var content: VBoxContainer
@@ -55,9 +59,16 @@ const CHARACTERS := [
 
 func _ready() -> void:
     randomize()
+    income_claimed_at = int(Time.get_unix_time_from_system())
     _load_save()
     _build_ui()
     show_tab("Sanctuary")
+
+func _process(_delta: float) -> void:
+    var current_second := int(Time.get_unix_time_from_system())
+    if current_second != last_income_display_second:
+        last_income_display_second = current_second
+        _refresh_income_display()
 
 func _seed_roster() -> void:
     roster = [
@@ -79,6 +90,7 @@ func _load_save() -> void:
     day = int(cfg.get_value("player", "day", 1))
     pull_count = int(cfg.get_value("player", "pull_count", 0))
     village_level = int(cfg.get_value("player", "village_level", 1))
+    income_claimed_at = int(cfg.get_value("player", "income_claimed_at", Time.get_unix_time_from_system()))
     event_claimed = bool(cfg.get_value("player", "event_claimed", false))
     daily_claimed = bool(cfg.get_value("player", "daily_claimed", false))
     battle_log = str(cfg.get_value("player", "battle_log", ""))
@@ -111,6 +123,7 @@ func _save_game() -> void:
     cfg.set_value("player", "day", day)
     cfg.set_value("player", "pull_count", pull_count)
     cfg.set_value("player", "village_level", village_level)
+    cfg.set_value("player", "income_claimed_at", income_claimed_at)
     cfg.set_value("player", "event_claimed", event_claimed)
     cfg.set_value("player", "daily_claimed", daily_claimed)
     cfg.set_value("player", "battle_log", battle_log)
@@ -293,16 +306,28 @@ func _hero_card() -> Control:
     margin.add_theme_constant_override("margin_bottom", 13)
     margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
     hero.add_child(margin)
+    var body := HBoxContainer.new()
+    body.add_theme_constant_override("separation", 2)
+    margin.add_child(body)
     var col := VBoxContainer.new()
+    col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     col.add_theme_constant_override("separation", 5)
-    margin.add_child(col)
+    body.add_child(col)
     col.add_child(_label("CHAPTER 01   •   THE STARFALL", 9, CYAN))
     col.add_child(_label("A world written\nin the stars", 26, TEXT))
-    col.add_child(_label("Find your companions. Build a home.\nChoose your path beyond the Veil.", 12, Color("#e4e8ff")))
+    col.add_child(_label("You are Eira Vale, a star-cartographer.\nBuild a village at the edge of the sky.", 12, Color("#e4e8ff")))
     var spacer := Control.new()
     spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
     col.add_child(spacer)
     col.add_child(_button("OPEN STORY  ›", func(): show_tab("Events"), 39))
+    var protagonist := TextureRect.new()
+    protagonist.texture = load("res://art/protagonist.svg")
+    protagonist.custom_minimum_size = Vector2(165, 220)
+    protagonist.size_flags_horizontal = Control.SIZE_SHRINK_END
+    protagonist.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+    protagonist.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+    protagonist.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    body.add_child(protagonist)
     return hero
 
 func _featured_companion(member: Dictionary) -> Control:
@@ -474,7 +499,55 @@ func _show_sanctuary() -> void:
     commission_col.add_child(_label("Reward: 80 gold + 20 gems", 10, MUTED))
     commission.add_child(commission_col)
     content.add_child(commission)
-    content.add_child(_button("REST UNTIL DAY %02d  ·  COLLECT VILLAGE INCOME" % (day + 1), _next_day, 43))
+    content.add_child(_income_panel())
+    content.add_child(_button("REST UNTIL DAY %02d  ·  ADVANCE STORY" % (day + 1), _next_day, 43))
+
+func _income_per_minute() -> int:
+    var building_levels := 0
+    for building in buildings:
+        building_levels += int(building.get("level", 1))
+    return 2 + roster.size() + village_level + building_levels
+
+func _pending_income() -> int:
+    var now := int(Time.get_unix_time_from_system())
+    var elapsed := clampi(now - income_claimed_at, 0, 10800)
+    return floori(float(elapsed) / 60.0) * _income_per_minute()
+
+func _refresh_income_display() -> void:
+    var pending := _pending_income()
+    if is_instance_valid(income_value_label):
+        income_value_label.text = "%d gold ready  ·  +%d / min" % [pending, _income_per_minute()]
+    if is_instance_valid(income_collect_button):
+        income_collect_button.text = "COLLECT %d GOLD" % pending
+        income_collect_button.disabled = pending <= 0
+
+func _income_panel() -> Control:
+    var panel := _panel(PANEL, 9, Color("#4a6e78"))
+    var row := HBoxContainer.new()
+    row.add_theme_constant_override("separation", 8)
+    panel.add_child(row)
+    var info := VBoxContainer.new()
+    info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    info.add_child(_label("HEARTHVALE TREASURY", 9, CYAN))
+    income_value_label = _label("", 11, TEXT)
+    info.add_child(income_value_label)
+    info.add_child(_label("Village income accumulates while you are away (up to 3 hours).", 9, MUTED))
+    row.add_child(info)
+    income_collect_button = _button("COLLECT", _collect_income, 43)
+    row.add_child(income_collect_button)
+    _refresh_income_display()
+    return panel
+
+func _collect_income() -> void:
+    var amount := _pending_income()
+    if amount <= 0:
+        _notice("Your treasury is still gathering gold. Come back in a minute.")
+        return
+    gold += amount
+    income_claimed_at = int(Time.get_unix_time_from_system())
+    _save_game()
+    _refresh_status()
+    show_tab(selected_tab)
 
 func _stat_card(title: String, value: String, caption: String, accent: Color) -> Control:
     var panel := _panel(PANEL, 9, Color("#293858"))
@@ -727,8 +800,9 @@ func _has_role(role: String) -> bool:
     return false
 
 func _show_village() -> void:
-    _section("Hearthvale Village", "A small settlement grows with your companions. Buildings create strategic bonuses; upgrades are choices, not idle tapping.")
+    _section("Hearthvale Village", "A small settlement grows with your companions. Upgrade its landmarks, then collect the gold they earn while you explore.")
     content.add_child(_label("Village level %d  •  Next level at 3 upgraded buildings" % village_level, 15, CYAN))
+    content.add_child(_income_panel())
     for building in buildings:
         var p := _panel()
         content.add_child(p)
