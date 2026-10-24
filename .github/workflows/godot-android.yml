@@ -32,7 +32,13 @@ jobs:
       - name: Install Android build packages
         run: |
           yes | sdkmanager --licenses
-          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "cmdline-tools;latest" "cmake;3.10.2.4988404" "ndk;23.2.8568313"
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "cmake;3.10.2.4988404" "ndk;23.2.8568313"
+          mkdir -p "$ANDROID_HOME/cmdline-tools"
+          if [ ! -d "$ANDROID_HOME/cmdline-tools/latest" ]; then
+            latest_dir="$(find "$ANDROID_HOME/cmdline-tools" -mindepth 1 -maxdepth 1 -type d -name "latest*" | sort | tail -n 1)"
+            if [ -n "$latest_dir" ]; then ln -s "$latest_dir" "$ANDROID_HOME/cmdline-tools/latest"; fi
+          fi
+          test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
 
       - name: Download Godot 4.3
         run: |
@@ -73,6 +79,7 @@ jobs:
           mkdir -p build
           set -o pipefail
           godot --headless --verbose --path NEBULIA_Godot --export-debug "Android" build/NEBULIA-debug.apk 2>&1 | tee /tmp/godot-export.log
+          if grep -E "ERROR:|Export:|Android SDK|Gradle|Could not|not found|missing" /tmp/godot-export.log; then true; fi
           test -s build/NEBULIA-debug.apk
 
       - name: Upload APK artifact
