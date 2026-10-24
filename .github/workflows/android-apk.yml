@@ -25,22 +25,26 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
 
       - name: Install Android SDK platform
-        run: |
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Extract project archive
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p extracted
           unzip -q NEBULIA_Android_Project.zip -d extracted
-          PROJECT_DIR="$(find extracted -type f -name settings.gradle -print -quit | xargs -r dirname)"
-          if [ -z "$PROJECT_DIR" ]; then
+          SETTINGS_FILE="$(find extracted -type f -name settings.gradle -print -quit)"
+          if [ -z "$SETTINGS_FILE" ]; then
             echo "::error::Не найден settings.gradle внутри NEBULIA_Android_Project.zip"
             echo "Содержимое архива:"
             find extracted -maxdepth 4 -type f | head -200
             exit 1
           fi
+          PROJECT_DIR="$(dirname "$SETTINGS_FILE")"
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
           echo "Android project found at: $PROJECT_DIR"
 
