@@ -11,6 +11,9 @@ public class NEBULIAPrototype : MonoBehaviour
     Text resources, status, level;
     Font font;
     Light sunLight;
+    Camera villageCamera;
+    Vector2 lastPointerPosition;
+    float lastPinchDistance;
     float dayClock = 0.22f;
     float saveClock;
     readonly List<Material> materials = new List<Material>();
@@ -83,7 +86,8 @@ public class NEBULIAPrototype : MonoBehaviour
         lightObj.transform.rotation=Quaternion.Euler(48,-32,0);
         RenderSettings.ambientLight=new Color(.62f,.69f,.76f);
         var camObj=new GameObject("Village Camera"); camObj.tag="MainCamera";
-        var cam=camObj.AddComponent<Camera>(); cam.transform.position=new Vector3(0,20,-23);
+        var cam=camObj.AddComponent<Camera>(); villageCamera=cam;
+        cam.transform.position=new Vector3(0,20,-23);
         cam.transform.rotation=Quaternion.Euler(43,0,0); cam.orthographic=true; cam.orthographicSize=14.5f;
         cam.backgroundColor=new Color(.55f,.76f,.87f); cam.clearFlags=CameraClearFlags.SolidColor;
     }
@@ -156,8 +160,56 @@ public class NEBULIAPrototype : MonoBehaviour
             sunLight.color = Color.Lerp(new Color(.42f,.52f,.82f), new Color(1f,.86f,.71f), daylight);
             RenderSettings.ambientLight = Color.Lerp(new Color(.13f,.17f,.29f), new Color(.62f,.69f,.76f), daylight);
         }
+        HandleCameraInput();
         saveClock += Time.deltaTime;
         if (saveClock >= 30f) { SaveGame(); saveClock = 0f; }
+    }
+
+    void HandleCameraInput()
+    {
+        if (villageCamera == null) return;
+        if (Input.touchCount == 1)
+        {
+            Touch t = Input.GetTouch(0);
+            if (t.phase == TouchPhase.Began) lastPointerPosition = t.position;
+            else if (t.phase == TouchPhase.Moved && t.position.y > Screen.height * .28f)
+            {
+                Vector2 delta = t.position - lastPointerPosition;
+                Vector3 move = new Vector3(-delta.x * .018f, 0f, -delta.y * .018f);
+                villageCamera.transform.position += move;
+                villageCamera.transform.position = new Vector3(
+                    Mathf.Clamp(villageCamera.transform.position.x, -9f, 9f),
+                    villageCamera.transform.position.y,
+                    Mathf.Clamp(villageCamera.transform.position.z, -27f, -10f));
+                lastPointerPosition = t.position;
+            }
+        }
+        else if (Input.touchCount >= 2)
+        {
+            Touch a = Input.GetTouch(0), b = Input.GetTouch(1);
+            float distance = Vector2.Distance(a.position, b.position);
+            if (lastPinchDistance > 0f)
+                villageCamera.orthographicSize = Mathf.Clamp(villageCamera.orthographicSize + (lastPinchDistance - distance) * .012f, 8f, 19f);
+            lastPinchDistance = distance;
+        }
+        else
+        {
+            lastPinchDistance = 0f;
+            if (Input.GetMouseButtonDown(0)) lastPointerPosition = Input.mousePosition;
+            else if (Input.GetMouseButton(0) && Input.mousePosition.y > Screen.height * .28f)
+            {
+                Vector2 current = Input.mousePosition;
+                Vector2 delta = current - lastPointerPosition;
+                villageCamera.transform.position += new Vector3(-delta.x * .018f, 0f, -delta.y * .018f);
+                villageCamera.transform.position = new Vector3(
+                    Mathf.Clamp(villageCamera.transform.position.x, -9f, 9f),
+                    villageCamera.transform.position.y,
+                    Mathf.Clamp(villageCamera.transform.position.z, -27f, -10f));
+                lastPointerPosition = current;
+            }
+            if (Input.mouseScrollDelta.y != 0f)
+                villageCamera.orthographicSize = Mathf.Clamp(villageCamera.orthographicSize - Input.mouseScrollDelta.y, 8f, 19f);
+        }
     }
 
     void Income(){gold+=15+tavernLevel*2;food+=2;wood+=3;Refresh();}
