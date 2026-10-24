@@ -31,6 +31,7 @@ var toast_label: Label
 var toast_timer := 0.0
 var elapsed := 0.0
 var viewed_both := false
+var viewed_character_ids: Array[int] = []
 var income_notice_shown := false
 var save_elapsed := 0.0
 
@@ -52,6 +53,7 @@ func _save_game() -> void:
     data.set_value("resources", "town_level", town_level)
     data.set_value("resources", "total_income", total_income)
     data.set_value("progress", "viewed_both", viewed_both)
+    data.set_value("progress", "viewed_character_ids", viewed_character_ids)
     data.set_value("progress", "income_notice_shown", income_notice_shown)
     data.set_value("buildings", "items", buildings)
     data.set_value("characters", "items", characters)
@@ -68,6 +70,8 @@ func _load_game() -> void:
     town_level = int(data.get_value("resources", "town_level", town_level))
     total_income = int(data.get_value("resources", "total_income", total_income))
     viewed_both = bool(data.get_value("progress", "viewed_both", viewed_both))
+    viewed_character_ids = data.get_value("progress", "viewed_character_ids", viewed_character_ids)
+    viewed_both = viewed_character_ids.size() >= characters.size()
     income_notice_shown = bool(data.get_value("progress", "income_notice_shown", income_notice_shown))
     buildings = data.get_value("buildings", "items", buildings)
     characters = data.get_value("characters", "items", characters)
@@ -264,7 +268,9 @@ func _show_characters() -> void:
 
 func _inspect_character(index: int) -> void:
     var c: Dictionary = characters[index]
-    viewed_both = true
+    if not viewed_character_ids.has(index):
+        viewed_character_ids.append(index)
+    viewed_both = viewed_character_ids.size() >= characters.size()
     c["affection"] = int(c["affection"]) + 1
     characters[index] = c
     for child in content.get_children():
@@ -286,6 +292,7 @@ func _inspect_character(index: int) -> void:
     _button(card, "← Назад к героям", func(): _show_tab("characters"))
     _refresh_header()
     _check_quests()
+    _save_game()
 
 func _gift_character(index: int) -> void:
     if gold < 15:
@@ -329,6 +336,7 @@ func _claim_quest(index: int) -> void:
     gold += int(q["reward"])
     _toast("Задание выполнено! +"+str(q["reward"])+" золота")
     _show_tab("quests")
+    _save_game()
 
 func _check_quests() -> void:
     if quests.is_empty():
@@ -382,6 +390,7 @@ func _upgrade_building(index: int) -> void:
     _toast(str(b["name"])+" улучшено до уровня "+str(b["level"])+"!")
     _show_tab("village")
     _check_quests()
+    _save_game()
 
 func _refresh_header() -> void:
     if not is_instance_valid(header_label):
