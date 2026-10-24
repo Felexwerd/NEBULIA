@@ -54,6 +54,15 @@ jobs:
           export/android/java_sdk_path = "$JAVA_HOME"
           EOF
 
+      - name: Install Android build template
+        run: |
+          godot --headless --path NEBULIA_Godot --editor --install-android-build-template --quit 2>&1 | tee /tmp/godot-android-template.log
+          if [ ! -d NEBULIA_Godot/android/build ]; then
+            echo "Godot did not create the Android build template."
+            cat /tmp/godot-android-template.log
+            exit 1
+          fi
+
       - name: Validate project scripts
         run: |
           set -o pipefail
@@ -67,7 +76,8 @@ jobs:
       - name: Export debug APK
         run: |
           mkdir -p build
-          godot --headless --path NEBULIA_Godot --export-debug "Android" build/NEBULIA-debug.apk 2>&1 | tee /tmp/godot-export.log
+          set -o pipefail
+          godot --headless --verbose --path NEBULIA_Godot --export-debug "Android" build/NEBULIA-debug.apk 2>&1 | tee /tmp/godot-export.log
           test -s build/NEBULIA-debug.apk
 
       - name: Upload APK artifact
