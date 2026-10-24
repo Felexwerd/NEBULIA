@@ -329,10 +329,10 @@ func _start_battle(place: String, cost: int, enemy_hp: int, reward_gold: int, re
     var rounds := 0
     var hp := enemy_hp
     var lines: Array[String] = []
-    var team_damage := max(18, int(power * 0.31))
+    var team_damage: int = maxi(18, int(power * 0.31))
     while hp > 0 and rounds < 8:
         rounds += 1
-        var damage := team_damage + randi_range(-8, 12)
+        var damage: int = team_damage + randi_range(-8, 12)
         if rounds == 2 and _has_role("Support"):
             damage += 15
             lines.append("Mira reads the wind: team combo +15 damage.")
@@ -341,9 +341,9 @@ func _start_battle(place: String, cost: int, enemy_hp: int, reward_gold: int, re
         hp -= damage
         lines.append("Round %d: your crew deals %d damage." % [rounds, damage])
         if hp > 0:
-            var incoming := max(4, 18 - int(power * 0.025))
+            var incoming: int = maxi(4, 18 - int(power * 0.025))
             if _has_role("Guardian"):
-                incoming = max(2, incoming - 5)
+                incoming = maxi(2, incoming - 5)
             lines.append("Enemy counters for %d resolve." % incoming)
     if hp <= 0:
         gold += reward_gold
