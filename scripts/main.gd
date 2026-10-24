@@ -453,3 +453,10 @@ func _refresh_header() -> void:
         return
     header_label.text = "Деревня Ур."+str(town_level)
     resources_label.text = "🪙 "+str(gold)+"   🌾 "+str(food)+"   🪵 "+str(wood)+"   💎 "+str(crystals)
+
+
+func _toast(message: String) -> void:
+    if not is_instance_valid(toast_label):
+        return
+    toast_label.text = message
+    toast_timer = 3.0
