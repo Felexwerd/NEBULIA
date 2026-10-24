@@ -50,7 +50,7 @@ jobs:
           unzip -q /tmp/templates.tpz -d /tmp/godot-templates
           cp -a /tmp/godot-templates/templates/. "$HOME/.local/share/godot/export_templates/4.3.stable/"
           test -f "$HOME/.local/share/godot/export_templates/4.3.stable/android_source.zip"
-          mkdir -p NEBULIA_Godot/android/build
+          mkdir -p NEBULIA_Godot/android/build NEBULIA_Godot/build
           unzip -q "$HOME/.local/share/godot/export_templates/4.3.stable/android_source.zip" -d NEBULIA_Godot/android/build
           test -f NEBULIA_Godot/android/build/build.gradle
 
@@ -76,15 +76,19 @@ jobs:
 
       - name: Export debug APK
         run: |
-          mkdir -p build
+          mkdir -p "$GITHUB_WORKSPACE/NEBULIA_Godot/build"
+          APK_PATH="$GITHUB_WORKSPACE/NEBULIA_Godot/build/NEBULIA-debug.apk"
           set -o pipefail
-          godot --headless --verbose --path NEBULIA_Godot --export-debug "Android" build/NEBULIA-debug.apk 2>&1 | tee /tmp/godot-export.log
-          if grep -E "ERROR:|Export:|Android SDK|Gradle|Could not|not found|missing" /tmp/godot-export.log; then true; fi
-          test -s build/NEBULIA-debug.apk
+          godot --headless --verbose --path "$GITHUB_WORKSPACE/NEBULIA_Godot" --export-debug "Android" "$APK_PATH" 2>&1 | tee /tmp/godot-export.log
+          if grep -E "ERROR:|Export:|Android SDK|Gradle|Could not|not found|missing" /tmp/godot-export.log; then
+            echo "Godot Android export reported errors."
+            exit 1
+          fi
+          test -s "$APK_PATH"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: NEBULIA-debug-apk
-          path: build/NEBULIA-debug.apk
+          path: NEBULIA_Godot/build/NEBULIA-debug.apk
           if-no-files-found: error
