@@ -17,6 +17,9 @@ public class NEBULIAPrototype : MonoBehaviour
     float dayClock = 0.22f;
     float saveClock;
     readonly List<Material> materials = new List<Material>();
+    readonly List<Transform> residents = new List<Transform>();
+    readonly List<Vector3> residentHomes = new List<Vector3>();
+    float playClock;
 
     void Start()
     {
@@ -98,12 +101,14 @@ public class NEBULIAPrototype : MonoBehaviour
         }
         for(int i=0;i<7;i++){
             var v=GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            v.name="Village resident"; v.transform.position=new Vector3(-4+i*1.25f,.62f,Mathf.Sin(i*1.7f)*2);
+            v.name="Villager · "+(i+1); v.transform.position=new Vector3(-4+i*1.25f,.62f,Mathf.Sin(i*1.7f)*2);
             v.transform.localScale=new Vector3(.42f,.62f,.42f);
             v.GetComponent<Renderer>().sharedMaterial=MakeMat(Color.Lerp(new Color(.48f,.72f,.91f),new Color(.94f,.53f,.64f),i/6f));
             var h=GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            h.transform.position=v.transform.position+Vector3.up*.78f; h.transform.localScale=Vector3.one*.38f;
+            h.name="Villager head"; h.transform.SetParent(v.transform,false);
+            h.transform.localPosition=new Vector3(0,1.22f,0); h.transform.localScale=Vector3.one*.48f;
             h.GetComponent<Renderer>().sharedMaterial=wall;
+            residents.Add(v.transform); residentHomes.Add(v.transform.position);
         }
         var lightObj=new GameObject("Afternoon sunlight"); var light=lightObj.AddComponent<Light>();
         light.type=LightType.Directional; light.intensity=1.35f; light.color=new Color(1,.86f,.71f);
@@ -198,9 +203,27 @@ public class NEBULIAPrototype : MonoBehaviour
             sunLight.color = Color.Lerp(new Color(.42f,.52f,.82f), new Color(1f,.86f,.71f), daylight);
             RenderSettings.ambientLight = Color.Lerp(new Color(.13f,.17f,.29f), new Color(.62f,.69f,.76f), daylight);
         }
+        AnimateVillageLife();
         HandleCameraInput();
         saveClock += Time.deltaTime;
         if (saveClock >= 30f) { SaveGame(); saveClock = 0f; }
+    }
+
+    void AnimateVillageLife()
+    {
+        playClock += Time.deltaTime;
+        for (int i = 0; i < residents.Count; i++)
+        {
+            Transform villager = residents[i];
+            if (villager == null) continue;
+            Vector3 home = residentHomes[i];
+            float phase = playClock * (.48f + i * .035f) + i * 1.7f;
+            float walkX = Mathf.Sin(phase) * 1.05f;
+            float walkZ = Mathf.Cos(phase * .73f) * .68f;
+            villager.position = new Vector3(home.x + walkX, home.y + Mathf.Abs(Mathf.Sin(phase * 2.4f)) * .035f, home.z + walkZ);
+            Vector3 direction = new Vector3(Mathf.Cos(phase), 0f, -Mathf.Sin(phase * .73f) * .5f);
+            if (direction.sqrMagnitude > .01f) villager.rotation = Quaternion.Slerp(villager.rotation, Quaternion.LookRotation(direction), Time.deltaTime * 3f);
+        }
     }
 
     void HandleCameraInput()
@@ -285,7 +308,7 @@ public class NEBULIAPrototype : MonoBehaviour
     void Refresh()
     {
         if(resources!=null) resources.text="✦ "+gold+"     ◈ "+crystals+"     ◆ "+food+"     ▰ "+wood;
-        if(level!=null) level.text="Moonlit Tavern · Lv. "+tavernLevel;
+        if(level!=null) level.text="Moonlit Tavern · Lv. "+tavernLevel+"   |   Villagers: "+residents.Count;
     }
 
     void SaveGame()
