@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 public class NEBULIAPrototype : MonoBehaviour
 {
-    int gold = 420, crystals = 12, food = 86, wood = 120, tavernLevel = 1;
+    int gold = 420, crystals = 12, food = 86, wood = 120, tavernLevel = 1, farmLevel = 1;
     int heroesOwned = 2, questsCompleted = 0;
     bool questClaimed = false;
     Text resources, status, level;
@@ -165,7 +165,7 @@ public class NEBULIAPrototype : MonoBehaviour
         AddButton(co.transform,"RECRUIT",new Vector2(.5f,0),new Vector2(300,115),new Vector2(260,62),new Color(.88f,.62f,.25f),Recruit);
         AddButton(co.transform,"SAVE",new Vector2(.5f,0),new Vector2(-300,35),new Vector2(260,52),new Color(.20f,.48f,.38f),()=>{SaveGame();status.text="Village saved on this device.";});
         AddButton(co.transform,"TRADE",new Vector2(.5f,0),new Vector2(0,35),new Vector2(260,52),new Color(.20f,.48f,.38f),TradeResources);
-        AddButton(co.transform,"RESTORE",new Vector2(.5f,0),new Vector2(300,35),new Vector2(260,52),new Color(.34f,.38f,.48f),LoadAndRefresh);
+        AddButton(co.transform,"FARM +",new Vector2(.5f,0),new Vector2(300,35),new Vector2(260,52),new Color(.34f,.55f,.36f),UpgradeFarm);
     }
 
     RectTransform Panel(Transform p,Vector2 anchor,Vector2 pos,Vector2 size,Color color)
@@ -273,8 +273,17 @@ public class NEBULIAPrototype : MonoBehaviour
         }
     }
 
-    void Income(){gold+=15+tavernLevel*2;food+=2;wood+=3;Refresh();}
+    void Income(){gold+=15+tavernLevel*2;food+=1+farmLevel;wood+=3;Refresh();}
     void Upgrade(){int cost=tavernLevel*100;if(gold<cost){status.text="Not enough gold. Wait for income.";return;}gold-=cost;tavernLevel++;status.text="Moonlit Tavern upgraded!";Refresh();SaveGame();}
+    void UpgradeFarm()
+    {
+        int goldCost = farmLevel * 75;
+        int woodCost = farmLevel * 60;
+        if (gold < goldCost || wood < woodCost) { status.text="Farm upgrade needs "+goldCost+" gold and "+woodCost+" wood."; return; }
+        gold -= goldCost; wood -= woodCost; farmLevel++;
+        status.text="Farm upgraded to Lv. "+farmLevel+"! Food income increased.";
+        Refresh(); SaveGame();
+    }
     void Recruit()
     {
         if(crystals<5){status.text="You need 5 crystals to summon a hero.";return;}
@@ -308,14 +317,14 @@ public class NEBULIAPrototype : MonoBehaviour
     void Refresh()
     {
         if(resources!=null) resources.text="✦ "+gold+"     ◈ "+crystals+"     ◆ "+food+"     ▰ "+wood;
-        if(level!=null) level.text="Moonlit Tavern · Lv. "+tavernLevel+"   |   Villagers: "+residents.Count;
+        if(level!=null) level.text="Tavern Lv. "+tavernLevel+"  ·  Farm Lv. "+farmLevel+"  ·  Villagers: "+residents.Count;
     }
 
     void SaveGame()
     {
         PlayerPrefs.SetInt("neb_gold",gold); PlayerPrefs.SetInt("neb_crystals",crystals);
         PlayerPrefs.SetInt("neb_food",food); PlayerPrefs.SetInt("neb_wood",wood);
-        PlayerPrefs.SetInt("neb_tavern",tavernLevel); PlayerPrefs.SetInt("neb_heroes",heroesOwned);
+        PlayerPrefs.SetInt("neb_tavern",tavernLevel); PlayerPrefs.SetInt("neb_farm",farmLevel); PlayerPrefs.SetInt("neb_heroes",heroesOwned);
         PlayerPrefs.SetInt("neb_quests",questsCompleted); PlayerPrefs.SetInt("neb_quest_claimed",questClaimed?1:0);
         PlayerPrefs.SetFloat("neb_day_clock",dayClock); PlayerPrefs.Save();
     }
@@ -324,7 +333,7 @@ public class NEBULIAPrototype : MonoBehaviour
     {
         gold=PlayerPrefs.GetInt("neb_gold",gold); crystals=PlayerPrefs.GetInt("neb_crystals",crystals);
         food=PlayerPrefs.GetInt("neb_food",food); wood=PlayerPrefs.GetInt("neb_wood",wood);
-        tavernLevel=PlayerPrefs.GetInt("neb_tavern",tavernLevel); heroesOwned=PlayerPrefs.GetInt("neb_heroes",heroesOwned);
+        tavernLevel=PlayerPrefs.GetInt("neb_tavern",tavernLevel); farmLevel=PlayerPrefs.GetInt("neb_farm",farmLevel); heroesOwned=PlayerPrefs.GetInt("neb_heroes",heroesOwned);
         questsCompleted=PlayerPrefs.GetInt("neb_quests",questsCompleted);
         questClaimed=PlayerPrefs.GetInt("neb_quest_claimed",0)==1;
         dayClock=PlayerPrefs.GetFloat("neb_day_clock",dayClock);
