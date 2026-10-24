@@ -2,6 +2,11 @@ name: NEBULIA Unity Android APK
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'UnityProject/**'
+      - '.github/workflows/unity-android.yml'
 
 permissions:
   contents: read
