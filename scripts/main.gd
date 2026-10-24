@@ -5,6 +5,8 @@ extends Control
 var gold := 250
 var food := 80
 var wood := 60
+var crystals := 3
+var recruit_count := 0
 var town_level := 1
 var total_income := 0
 var selected_tab := "village"
@@ -50,6 +52,8 @@ func _save_game() -> void:
     data.set_value("resources", "gold", gold)
     data.set_value("resources", "food", food)
     data.set_value("resources", "wood", wood)
+    data.set_value("resources", "crystals", crystals)
+    data.set_value("progress", "recruit_count", recruit_count)
     data.set_value("resources", "town_level", town_level)
     data.set_value("resources", "total_income", total_income)
     data.set_value("progress", "viewed_both", viewed_both)
@@ -67,6 +71,8 @@ func _load_game() -> void:
     gold = int(data.get_value("resources", "gold", gold))
     food = int(data.get_value("resources", "food", food))
     wood = int(data.get_value("resources", "wood", wood))
+    crystals = int(data.get_value("resources", "crystals", crystals))
+    recruit_count = int(data.get_value("progress", "recruit_count", recruit_count))
     town_level = int(data.get_value("resources", "town_level", town_level))
     total_income = int(data.get_value("resources", "total_income", total_income))
     viewed_both = bool(data.get_value("progress", "viewed_both", viewed_both))
@@ -143,6 +149,7 @@ func _build_interface() -> void:
     _button(nav, "💗 Персонажи", func(): _show_tab("characters"))
     _button(nav, "📜 Задания", func(): _show_tab("quests"))
     _button(nav, "🛍 Торговля", func(): _show_tab("shop"))
+    _button(nav, "✨ Найм", func(): _show_tab("recruit"))
 
     var separator := ColorRect.new()
     separator.custom_minimum_size = Vector2(0, 2)
@@ -213,6 +220,8 @@ func _show_tab(tab: String) -> void:
             _show_quests()
         "shop":
             _show_shop()
+        "recruit":
+            _show_recruit()
     _refresh_header()
 
 func _show_village() -> void:
@@ -346,6 +355,53 @@ func _check_quests() -> void:
         _toast("Цель выполнена: накоплено 100 золота дохода!")
     _refresh_header()
 
+func _show_recruit() -> void:
+    _label(content, "ЗАЛ ПРИЗЫВА", 24, "#ffe6a8")
+    _label(content, "Трать кристаллы, чтобы встречать жителей. Сейчас доступен небольшой стартовый набор оригинальных героев.", 15, "#b7c9df")
+    var banner := _panel(content)
+    _label(banner, "✦ Зов судьбы ✦", 28, "#f2c7ff")
+    _label(banner, "Кристаллы: " + str(crystals) + "     Призывов: " + str(recruit_count), 18, "#9fdcff")
+    _label(banner, "Один призыв стоит 1 кристалл. Если есть ещё не открытый герой, он появится первым.", 15)
+    _button(banner, "✨ Призвать героя · 1 кристалл", _recruit_hero)
+    var bonus := _panel(content)
+    _label(bonus, "Подарок деревне", 20, "#ffe6a8")
+    _label(bonus, "Забери небольшую помощь для дальнейшего развития.", 15)
+    _button(bonus, "Забрать 50 золота и 1 кристалл", _claim_daily_gift)
+    var roster := _panel(content)
+    _label(roster, "Герои в коллекции", 20, "#ffe6a8")
+    for hero in characters:
+        _label(roster, str(hero["name"]) + " · " + str(hero["rarity"]) + " · близость " + str(hero["affection"]), 16)
+
+func _recruit_hero() -> void:
+    if crystals < 1:
+        _toast("Не хватает кристаллов. Забери подарок.")
+        return
+    crystals -= 1
+    recruit_count += 1
+    var undiscovered: Array[int] = []
+    for i in range(characters.size()):
+        if not viewed_character_ids.has(i):
+            undiscovered.append(i)
+    var index: int
+    if not undiscovered.is_empty():
+        index = undiscovered[0]
+    else:
+        index = randi_range(0, characters.size() - 1)
+    if not viewed_character_ids.has(index):
+        viewed_character_ids.append(index)
+    viewed_both = viewed_character_ids.size() >= characters.size()
+    characters[index]["affection"] = int(characters[index]["affection"]) + 3
+    _toast("Призыв: " + str(characters[index]["name"]) + " присоединилась к деревне!")
+    _save_game()
+    _inspect_character(index)
+
+func _claim_daily_gift() -> void:
+    gold += 50
+    crystals += 1
+    _toast("Подарок получен!")
+    _save_game()
+    _show_tab("recruit")
+
 func _show_shop() -> void:
     _label(content, "ТОРГОВАЯ ПЛОЩАДЬ", 24, "#ffe6a8")
     _label(content, "Потрать накопленное золото на припасы для деревни.", 15, "#b7c9df")
@@ -396,4 +452,4 @@ func _refresh_header() -> void:
     if not is_instance_valid(header_label):
         return
     header_label.text = "Деревня Ур."+str(town_level)
-    resources_label.text = "🪙 "+str(gold)+"     🌾 "+str(food)+"     🪵 "+str(wood)+"     ✨ Доход каждые 3 сек."
+    resources_label.text = "🪙 "+str(gold)+"   🌾 "+str(food)+"   🪵 "+str(wood)+"   💎 "+str(crystals)
