@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Godot with Android export templates
         uses: chickensoft-games/setup-godot@v2
@@ -30,7 +30,7 @@ jobs:
           include-templates: true
 
       - name: Set up Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -49,7 +49,8 @@ jobs:
           set -euo pipefail
           mkdir -p "$HOME/.config/godot" "$HOME/.android" build
           keytool -genkeypair -noprompt -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-          cat > "$HOME/.config/godot/editor_settings-4.tres" <<EOF
+          # Godot 4.4 loads editor_settings-4.4.tres (not editor_settings-4.tres).
+          cat > "$HOME/.config/godot/editor_settings-4.4.tres" <<EOF
           [gd_resource type="EditorSettings" format=3]
           [resource]
           export/android/android_sdk_path = "/usr/local/lib/android/sdk"
@@ -81,7 +82,7 @@ jobs:
           test -d "$ANDROID_HOME/platforms/android-35"
           test -d "$ANDROID_HOME/build-tools/35.0.0"
           test -f "$HOME/.android/debug.keystore"
-          find "$HOME/.local/share/godot" "$HOME/.config/godot" -maxdepth 4 -type f 2>/dev/null | head -80 || true
+          grep -E 'export/android/(android_sdk_path|java_sdk_path|debug_keystore)' "$HOME/.config/godot/editor_settings-4.4.tres"
 
       - name: Import project and validate scripts
         shell: bash
@@ -100,9 +101,9 @@ jobs:
           godot --headless --path . --export-debug "Android" build/NEBULIA-debug.apk --verbose 2>&1 | tee godot-export.log
           if ! test -s build/NEBULIA-debug.apk; then
             echo "APK export failed. Recent export diagnostics:"
-            grep -Ei "error|warning|android|template|sdk|keystore|gradle|export" godot-export.log | tail -160 || true
+            grep -Ei "error|warning|android|template|sdk|keystore|gradle|export|configuration" godot-export.log | tail -200 || true
             echo "Installed Android export templates:"
-            find "$HOME/.local/share/godot" -maxdepth 6 -type f 2>/dev/null | grep -Ei 'android|template' | head -100 || true
+            find "$HOME/.local/share/godot" "$HOME/.config/godot" -maxdepth 6 -type f 2>/dev/null | grep -Ei 'android|template|editor_settings' | head -120 || true
             exit 1
           fi
           ls -lh build/NEBULIA-debug.apk
