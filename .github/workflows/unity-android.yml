@@ -31,7 +31,6 @@ jobs:
           targetPlatform: Android
           buildName: NEBULIA
           buildsPath: build
-          androidAppBundle: false
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
