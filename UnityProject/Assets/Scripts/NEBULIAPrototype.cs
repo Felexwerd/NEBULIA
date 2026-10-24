@@ -6,13 +6,19 @@ using System.Collections.Generic;
 public class NEBULIAPrototype : MonoBehaviour
 {
     int gold = 420, crystals = 12, food = 86, wood = 120, tavernLevel = 1;
+    int heroesOwned = 2, questsCompleted = 0;
+    bool questClaimed = false;
     Text resources, status, level;
     Font font;
+    Light sunLight;
+    float dayClock = 0.22f;
+    float saveClock;
     readonly List<Material> materials = new List<Material>();
 
     void Start()
     {
         Application.targetFrameRate = 60;
+        LoadGame();
         BuildVillage();
         BuildHUD();
         InvokeRepeating(nameof(Income), 5, 5);
@@ -73,6 +79,7 @@ public class NEBULIAPrototype : MonoBehaviour
         }
         var lightObj=new GameObject("Afternoon sunlight"); var light=lightObj.AddComponent<Light>();
         light.type=LightType.Directional; light.intensity=1.35f; light.color=new Color(1,.86f,.71f);
+        sunLight = light;
         lightObj.transform.rotation=Quaternion.Euler(48,-32,0);
         RenderSettings.ambientLight=new Color(.62f,.69f,.76f);
         var camObj=new GameObject("Village Camera"); camObj.tag="MainCamera";
@@ -106,9 +113,12 @@ public class NEBULIAPrototype : MonoBehaviour
         status=Label(co.transform,"Your village is waking up...",new Vector2(.5f,0),new Vector2(0,285),new Vector2(900,55),24,new Color(.78f,.86f,.98f),TextAnchor.MiddleCenter);
         level=Label(co.transform,"Moonlit Tavern · Lv. 1",new Vector2(.5f,0),new Vector2(-210,205),new Vector2(470,55),27,Color.white,TextAnchor.MiddleCenter);
         AddButton(co.transform,"UPGRADE · 100 G",new Vector2(.5f,0),new Vector2(300,205),new Vector2(300,66),new Color(.73f,.39f,.85f),Upgrade);
-        AddButton(co.transform,"QUESTS",new Vector2(.5f,0),new Vector2(-300,115),new Vector2(260,62),new Color(.23f,.53f,.76f),()=>status.text="Quest: gather 3 moon crystals · "+crystals+"/3");
-        AddButton(co.transform,"HEROES",new Vector2(.5f,0),new Vector2(0,115),new Vector2(260,62),new Color(.23f,.53f,.76f),()=>status.text="Liora · Kael · Meiri · Celestra — character roster");
+        AddButton(co.transform,"QUESTS",new Vector2(.5f,0),new Vector2(-300,115),new Vector2(260,62),new Color(.23f,.53f,.76f),ShowQuest);
+        AddButton(co.transform,"HEROES",new Vector2(.5f,0),new Vector2(0,115),new Vector2(260,62),new Color(.23f,.53f,.76f),ShowHeroes);
         AddButton(co.transform,"RECRUIT",new Vector2(.5f,0),new Vector2(300,115),new Vector2(260,62),new Color(.88f,.62f,.25f),Recruit);
+        AddButton(co.transform,"SAVE",new Vector2(.5f,0),new Vector2(-300,35),new Vector2(260,52),new Color(.20f,.48f,.38f),()=>{SaveGame();status.text="Village saved on this device.";});
+        AddButton(co.transform,"TRADE",new Vector2(.5f,0),new Vector2(0,35),new Vector2(260,52),new Color(.20f,.48f,.38f),TradeResources);
+        AddButton(co.transform,"RESTORE",new Vector2(.5f,0),new Vector2(300,35),new Vector2(260,52),new Color(.34f,.38f,.48f),LoadAndRefresh);
     }
 
     RectTransform Panel(Transform p,Vector2 anchor,Vector2 pos,Vector2 size,Color color)
@@ -133,9 +143,82 @@ public class NEBULIAPrototype : MonoBehaviour
         t.resizeTextForBestFit=true; t.resizeTextMinSize=14; t.resizeTextMaxSize=24;
     }
 
+    void Update()
+    {
+        dayClock += Time.deltaTime / 180f;
+        if (dayClock >= 1f) dayClock -= 1f;
+        if (sunLight != null)
+        {
+            float angle = dayClock * 360f - 90f;
+            sunLight.transform.rotation = Quaternion.Euler(angle, -32f, 0f);
+            float daylight = Mathf.Clamp01(Mathf.Sin(dayClock * Mathf.PI));
+            sunLight.intensity = Mathf.Lerp(0.18f, 1.35f, daylight);
+            sunLight.color = Color.Lerp(new Color(.42f,.52f,.82f), new Color(1f,.86f,.71f), daylight);
+            RenderSettings.ambientLight = Color.Lerp(new Color(.13f,.17f,.29f), new Color(.62f,.69f,.76f), daylight);
+        }
+        saveClock += Time.deltaTime;
+        if (saveClock >= 30f) { SaveGame(); saveClock = 0f; }
+    }
+
     void Income(){gold+=15+tavernLevel*2;food+=2;wood+=3;Refresh();}
-    void Upgrade(){int cost=tavernLevel*100;if(gold<cost){status.text="Not enough gold. Wait for income.";return;}gold-=cost;tavernLevel++;status.text="Moonlit Tavern upgraded!";Refresh();}
-    void Recruit(){if(crystals<5){status.text="You need 5 crystals to summon a hero.";return;}crystals-=5;status.text="A new hero's story begins!";Refresh();}
-    void Refresh(){if(resources!=null)resources.text="✦ "+gold+"     ◈ "+crystals+"     ◆ "+food+"     ▰ "+wood;if(level!=null)level.text="Moonlit Tavern · Lv. "+tavernLevel;}
-    void OnDestroy(){foreach(var m in materials)if(m!=null)Destroy(m);}
+    void Upgrade(){int cost=tavernLevel*100;if(gold<cost){status.text="Not enough gold. Wait for income.";return;}gold-=cost;tavernLevel++;status.text="Moonlit Tavern upgraded!";Refresh();SaveGame();}
+    void Recruit()
+    {
+        if(crystals<5){status.text="You need 5 crystals to summon a hero.";return;}
+        crystals-=5; heroesOwned++; status.text="A new hero joined your village! Heroes collected: "+heroesOwned;
+        Refresh(); SaveGame();
+    }
+
+    void ShowQuest()
+    {
+        if (questClaimed) { status.text="Daily quest complete! Come back after your next adventure."; return; }
+        status.text="QUEST: Upgrade the Moonlit Tavern. Reward: 120 gold + 2 crystals.";
+        if (tavernLevel > 1)
+        {
+            gold += 120; crystals += 2; questsCompleted++; questClaimed = true;
+            status.text="Quest completed! +120 gold, +2 crystals."; Refresh(); SaveGame();
+        }
+        else status.text += " Upgrade it first, then tap QUESTS again to claim.";
+    }
+
+    void ShowHeroes()
+    {
+        status.text="HERO COLLECTION ("+heroesOwned+"): Eliana · Liara · Kael · Meiri · Celestra. Recruit costs 5 crystals.";
+    }
+
+    void TradeResources()
+    {
+        if (food < 10) { status.text="Need at least 10 food to trade."; return; }
+        food -= 10; gold += 35; status.text="Trade complete: 10 food exchanged for 35 gold."; Refresh(); SaveGame();
+    }
+
+    void Refresh()
+    {
+        if(resources!=null) resources.text="✦ "+gold+"     ◈ "+crystals+"     ◆ "+food+"     ▰ "+wood;
+        if(level!=null) level.text="Moonlit Tavern · Lv. "+tavernLevel;
+    }
+
+    void SaveGame()
+    {
+        PlayerPrefs.SetInt("neb_gold",gold); PlayerPrefs.SetInt("neb_crystals",crystals);
+        PlayerPrefs.SetInt("neb_food",food); PlayerPrefs.SetInt("neb_wood",wood);
+        PlayerPrefs.SetInt("neb_tavern",tavernLevel); PlayerPrefs.SetInt("neb_heroes",heroesOwned);
+        PlayerPrefs.SetInt("neb_quests",questsCompleted); PlayerPrefs.SetInt("neb_quest_claimed",questClaimed?1:0);
+        PlayerPrefs.SetFloat("neb_day_clock",dayClock); PlayerPrefs.Save();
+    }
+
+    void LoadGame()
+    {
+        gold=PlayerPrefs.GetInt("neb_gold",gold); crystals=PlayerPrefs.GetInt("neb_crystals",crystals);
+        food=PlayerPrefs.GetInt("neb_food",food); wood=PlayerPrefs.GetInt("neb_wood",wood);
+        tavernLevel=PlayerPrefs.GetInt("neb_tavern",tavernLevel); heroesOwned=PlayerPrefs.GetInt("neb_heroes",heroesOwned);
+        questsCompleted=PlayerPrefs.GetInt("neb_quests",questsCompleted);
+        questClaimed=PlayerPrefs.GetInt("neb_quest_claimed",0)==1;
+        dayClock=PlayerPrefs.GetFloat("neb_day_clock",dayClock);
+    }
+
+    void LoadAndRefresh(){LoadGame();Refresh();status.text="Saved village restored.";}
+    void OnApplicationPause(bool paused){if(paused)SaveGame();}
+    void OnApplicationQuit(){SaveGame();}
+    void OnDestroy(){SaveGame();foreach(var m in materials)if(m!=null)Destroy(m);}
 }
