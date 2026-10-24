@@ -27,6 +27,11 @@ jobs:
       - name: Prepare export directory
         run: mkdir -p build
 
+      - name: Check Godot and Android export templates
+        run: |
+          godot --version
+          test -d /root/.local/share/godot/export_templates || test -d "$HOME/.local/share/godot/export_templates" || true
+
       - name: Import Godot project
         run: godot --headless --editor --path . --quit
 
