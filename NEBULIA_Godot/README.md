@@ -1,24 +1,21 @@
-# NEBULIA — Godot prototype
+# NEBULIA — companion collection RPG
 
-An original anime-inspired companion collection and village strategy game prototype.
-It borrows broad genre conventions (character recruitment, settlement growth, events and rankings) but does not copy Isekai: Slow Life's characters, art, text, UI, or assets.
+An original anime-inspired fantasy collection and village RPG prototype built with Godot 4.3.
 
-## Included in this vertical slice
-- Astral Archive summon banner with visible odds and a 10-pull SR+ guarantee
-- Character roster, roles, levels, duplicates, bond
-- Tactical expedition encounters with team composition bonuses
-- Hearthvale village and upgradeable buildings
-- Story event reward
-- Local simulated ranking board
-- Day advancement and resource income
+## Playable loop
+- Collect gold, gems and stamina, claim a daily blessing and advance the in-game day.
+- Recruit original companions through the Astral Archive with visible odds and a 10-pull SR+ guarantee.
+- Train companions, explore routes, earn rewards and build bonds.
+- Upgrade Hearthvale buildings and play a short story event.
+- Original vector character portraits, fantasy artwork and portrait-first mobile layout with bottom navigation.
 
-## Open
-1. Install Godot 4.3 or newer (Godot 4.x).
-2. In Godot Project Manager, choose Import and select this folder's `project.godot`.
-3. Run the project (F6/F5).
+## Run
+1. Install Godot 4.3 or a compatible Godot 4.x build.
+2. Import this folder's project.godot in Project Manager.
+3. Press F6/F5 to run.
 
-## Important scope notes
-This is a playable foundation/prototype, not a finished commercial game. The ranking board is local simulated data; real online rankings, accounts, cloud saves, remote events and anti-cheat need a backend. Character portraits are color placeholders and should later be replaced with original commissioned/generated art. No copyrighted Isekai: Slow Life assets or characters are included.
+## Scope
+This is an evolving playable prototype, not yet a full commercial game. Ranking data is local and simulated; accounts, cloud saves, online events and real leaderboards need a game backend. All current art and writing is original to NEBULIA and does not use Isekai: Slow Life characters or assets.
 
 ## Android
-For Android export, install Godot export templates and configure Android SDK/JDK paths in Editor Settings. Then install Android export templates and create an Android preset. The repository includes no signing key; a release build will require your own secure keystore.
+The repository's GitHub Actions workflow exports and signs a debug APK for device testing. A Play Store release needs a separate private release keystore and release signing configuration.
