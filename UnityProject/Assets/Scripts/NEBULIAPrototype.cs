@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 public class NEBULIAPrototype : MonoBehaviour
 {
-    int gold = 420, crystals = 12, food = 86, wood = 120, tavernLevel = 1, farmLevel = 1;
+    int gold = 420, crystals = 12, food = 86, wood = 120, tavernLevel = 1, farmLevel = 1, buildingsBuilt = 0;
     int heroesOwned = 2, questsCompleted = 0;
     bool questClaimed = false;
     Text resources, status, level;
@@ -26,6 +26,7 @@ public class NEBULIAPrototype : MonoBehaviour
         Application.targetFrameRate = 60;
         LoadGame();
         BuildVillage();
+        RestorePlayerBuildings();
         BuildHUD();
         InvokeRepeating(nameof(Income), 5, 5);
         Refresh();
@@ -165,7 +166,7 @@ public class NEBULIAPrototype : MonoBehaviour
         AddButton(co.transform,"RECRUIT",new Vector2(.5f,0),new Vector2(300,115),new Vector2(260,62),new Color(.88f,.62f,.25f),Recruit);
         AddButton(co.transform,"SAVE",new Vector2(.5f,0),new Vector2(-300,35),new Vector2(260,52),new Color(.20f,.48f,.38f),()=>{SaveGame();status.text="Village saved on this device.";});
         AddButton(co.transform,"TRADE",new Vector2(.5f,0),new Vector2(0,35),new Vector2(260,52),new Color(.20f,.48f,.38f),TradeResources);
-        AddButton(co.transform,"FARM +",new Vector2(.5f,0),new Vector2(300,35),new Vector2(260,52),new Color(.34f,.55f,.36f),UpgradeFarm);
+        AddButton(co.transform,"BUILD",new Vector2(.5f,0),new Vector2(300,35),new Vector2(260,52),new Color(.65f,.43f,.28f),BuildNewBuilding);
     }
 
     RectTransform Panel(Transform p,Vector2 anchor,Vector2 pos,Vector2 size,Color color)
@@ -275,6 +276,41 @@ public class NEBULIAPrototype : MonoBehaviour
 
     void Income(){gold+=15+tavernLevel*2;food+=1+farmLevel;wood+=3;Refresh();}
     void Upgrade(){int cost=tavernLevel*100;if(gold<cost){status.text="Not enough gold. Wait for income.";return;}gold-=cost;tavernLevel++;status.text="Moonlit Tavern upgraded!";Refresh();SaveGame();}
+    void BuildNewBuilding()
+    {
+        const int goldCost = 140;
+        const int woodCost = 90;
+        if (gold < goldCost || wood < woodCost)
+        {
+            status.text = "Building costs 140 gold and 90 wood. Gather resources and try again.";
+            return;
+        }
+        gold -= goldCost;
+        wood -= woodCost;
+        buildingsBuilt++;
+        CreatePlayerBuilding(buildingsBuilt);
+        status.text = "New cottage built! Buildings constructed: " + buildingsBuilt;
+        Refresh();
+        SaveGame();
+    }
+
+    void RestorePlayerBuildings()
+    {
+        for (int i = 1; i <= buildingsBuilt; i++) CreatePlayerBuilding(i);
+    }
+
+    void CreatePlayerBuilding(int index)
+    {
+        int slot = index - 1;
+        float x = -11f + (slot % 4) * 3.4f;
+        float z = (slot / 4) % 2 == 0 ? 8.2f : -8.4f;
+        if (Mathf.Abs(x) < 4.5f) x += 5.2f;
+        Material walls = MakeMat(new Color(.88f, .72f, .58f));
+        Material roof = MakeMat(index % 2 == 0 ? new Color(.36f,.46f,.72f) : new Color(.68f,.31f,.39f));
+        Material timber = MakeMat(new Color(.31f,.19f,.15f));
+        House("Player Cottage " + index, new Vector3(x, 0f, z), walls, roof, timber);
+    }
+
     void UpgradeFarm()
     {
         int goldCost = farmLevel * 75;
@@ -317,14 +353,14 @@ public class NEBULIAPrototype : MonoBehaviour
     void Refresh()
     {
         if(resources!=null) resources.text="✦ "+gold+"     ◈ "+crystals+"     ◆ "+food+"     ▰ "+wood;
-        if(level!=null) level.text="Tavern Lv. "+tavernLevel+"  ·  Farm Lv. "+farmLevel+"  ·  Villagers: "+residents.Count;
+        if(level!=null) level.text="Tavern Lv. "+tavernLevel+" · Farm Lv. "+farmLevel+" · Houses: "+(4+buildingsBuilt)+" · Villagers: "+residents.Count;
     }
 
     void SaveGame()
     {
         PlayerPrefs.SetInt("neb_gold",gold); PlayerPrefs.SetInt("neb_crystals",crystals);
         PlayerPrefs.SetInt("neb_food",food); PlayerPrefs.SetInt("neb_wood",wood);
-        PlayerPrefs.SetInt("neb_tavern",tavernLevel); PlayerPrefs.SetInt("neb_farm",farmLevel); PlayerPrefs.SetInt("neb_heroes",heroesOwned);
+        PlayerPrefs.SetInt("neb_tavern",tavernLevel); PlayerPrefs.SetInt("neb_farm",farmLevel); PlayerPrefs.SetInt("neb_buildings",buildingsBuilt); PlayerPrefs.SetInt("neb_heroes",heroesOwned);
         PlayerPrefs.SetInt("neb_quests",questsCompleted); PlayerPrefs.SetInt("neb_quest_claimed",questClaimed?1:0);
         PlayerPrefs.SetFloat("neb_day_clock",dayClock); PlayerPrefs.Save();
     }
@@ -333,7 +369,7 @@ public class NEBULIAPrototype : MonoBehaviour
     {
         gold=PlayerPrefs.GetInt("neb_gold",gold); crystals=PlayerPrefs.GetInt("neb_crystals",crystals);
         food=PlayerPrefs.GetInt("neb_food",food); wood=PlayerPrefs.GetInt("neb_wood",wood);
-        tavernLevel=PlayerPrefs.GetInt("neb_tavern",tavernLevel); farmLevel=PlayerPrefs.GetInt("neb_farm",farmLevel); heroesOwned=PlayerPrefs.GetInt("neb_heroes",heroesOwned);
+        tavernLevel=PlayerPrefs.GetInt("neb_tavern",tavernLevel); farmLevel=PlayerPrefs.GetInt("neb_farm",farmLevel); buildingsBuilt=PlayerPrefs.GetInt("neb_buildings",buildingsBuilt); heroesOwned=PlayerPrefs.GetInt("neb_heroes",heroesOwned);
         questsCompleted=PlayerPrefs.GetInt("neb_quests",questsCompleted);
         questClaimed=PlayerPrefs.GetInt("neb_quest_claimed",0)==1;
         dayClock=PlayerPrefs.GetFloat("neb_day_clock",dayClock);
