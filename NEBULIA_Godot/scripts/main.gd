@@ -27,6 +27,7 @@ var buildings: Array[Dictionary] = [
 ]
 var event_claimed := false
 var daily_claimed := false
+var team_names: Array[String] = []
 var battle_log := ""
 var active_enemy_hp := 90
 var player_turn := true
@@ -51,7 +52,8 @@ const CHARACTERS := [
 ]
 
 func _ready() -> void:
-    _seed_roster()
+    randomize()
+    _load_save()
     _build_ui()
     show_tab("Sanctuary")
 
@@ -61,6 +63,61 @@ func _seed_roster() -> void:
         _make_owned(CHARACTERS[2], 1),
         _make_owned(CHARACTERS[3], 1)
     ]
+    team_names = [CHARACTERS[1]["name"], CHARACTERS[2]["name"], CHARACTERS[3]["name"]]
+
+func _load_save() -> void:
+    var cfg := ConfigFile.new()
+    if cfg.load("user://nebulia_save.cfg") != OK:
+        _seed_roster()
+        _save_game()
+        return
+    gold = int(cfg.get_value("player", "gold", 1200))
+    gems = int(cfg.get_value("player", "gems", 180))
+    stamina = int(cfg.get_value("player", "stamina", 12))
+    day = int(cfg.get_value("player", "day", 1))
+    pull_count = int(cfg.get_value("player", "pull_count", 0))
+    village_level = int(cfg.get_value("player", "village_level", 1))
+    event_claimed = bool(cfg.get_value("player", "event_claimed", false))
+    daily_claimed = bool(cfg.get_value("player", "daily_claimed", false))
+    battle_log = str(cfg.get_value("player", "battle_log", ""))
+    roster.clear()
+    var saved_roster: Array = cfg.get_value("player", "roster", [])
+    for item in saved_roster:
+        if item is Dictionary:
+            roster.append(item.duplicate(true))
+    if roster.is_empty():
+        _seed_roster()
+    var saved_team: Array = cfg.get_value("player", "team_names", [])
+    team_names.clear()
+    for member_name in saved_team:
+        team_names.append(str(member_name))
+    if team_names.is_empty():
+        for i in range(mini(3, roster.size())):
+            team_names.append(str(roster[i].get("name", "")))
+    var saved_buildings: Array = cfg.get_value("player", "buildings", [])
+    if not saved_buildings.is_empty():
+        buildings.clear()
+        for item in saved_buildings:
+            if item is Dictionary:
+                buildings.append(item.duplicate(true))
+
+func _save_game() -> void:
+    var cfg := ConfigFile.new()
+    cfg.set_value("player", "gold", gold)
+    cfg.set_value("player", "gems", gems)
+    cfg.set_value("player", "stamina", stamina)
+    cfg.set_value("player", "day", day)
+    cfg.set_value("player", "pull_count", pull_count)
+    cfg.set_value("player", "village_level", village_level)
+    cfg.set_value("player", "event_claimed", event_claimed)
+    cfg.set_value("player", "daily_claimed", daily_claimed)
+    cfg.set_value("player", "battle_log", battle_log)
+    cfg.set_value("player", "roster", roster)
+    cfg.set_value("player", "team_names", team_names)
+    cfg.set_value("player", "buildings", buildings)
+    var err := cfg.save("user://nebulia_save.cfg")
+    if err != OK:
+        push_warning("Unable to save progress: %s" % error_string(err))
 
 func _make_owned(base: Dictionary, level: int) -> Dictionary:
     var item := base.duplicate(true)
@@ -373,7 +430,9 @@ func _show_sanctuary() -> void:
     daily_text.add_child(_label("A gift from the Celestial Archive", 11, TEXT))
     daily_text.add_child(_label("120 gold  ·  15 gems", 10, MUTED))
     daily_row.add_child(daily_text)
-    daily_row.add_child(_button("CLAIM", _claim_daily, 39))
+    var daily_button := _button("CLAIMED" if daily_claimed else "CLAIM", _claim_daily, 39)
+    daily_button.disabled = daily_claimed
+    daily_row.add_child(daily_button)
     content.add_child(daily)
 
     var stats := HBoxContainer.new()
@@ -477,6 +536,7 @@ func _summon(count: int) -> void:
         if not found:
             roster.append(_make_owned(base, 1))
             results.append("%s  [%s / %s]" % [base["name"], base["rarity"], base["role"]])
+    _save_game()
     _refresh_status()
     show_tab("Summon")
     var result_panel := _panel()
@@ -496,13 +556,27 @@ func _roll_character() -> int:
     return [3, 4, 3, 4][randi() % 4]
 
 func _show_roster() -> void:
-    _section("YOUR CONSTELLATION", "Meet your companions, train them, and grow their bonds.")
-    var party := _panel(PANEL_ALT, 11, Color("#3c5978"))
+    _section("YOUR CONSTELLATION", "Choose three companions for your active party and train them between expeditions.")
+    var party := _panel(PANEL_ALT, 10, Color("#3c5978"))
     var party_col := VBoxContainer.new()
-    party_col.add_theme_constant_override("separation", 4)
-    party_col.add_child(_label("YOUR EXPEDITION CREW", 10, CYAN))
+    party_col.add_theme_constant_override("separation", 5)
+    party_col.add_child(_label("ACTIVE PARTY  ·  %d / 3" % team_names.size(), 10, CYAN))
     party_col.add_child(_label("Team power  %d" % _team_power(), 16, GOLD))
-    party_col.add_child(_label("Your first three companions travel together.", 11, MUTED))
+    var slots := HBoxContainer.new()
+    slots.add_theme_constant_override("separation", 7)
+    for slot in range(3):
+        var slot_col := VBoxContainer.new()
+        slot_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        if slot < team_names.size():
+            var active_member := _member_by_name(team_names[slot])
+            if not active_member.is_empty():
+                slot_col.add_child(_portrait(str(active_member.get("slug", "airi")), 84, 96))
+                slot_col.add_child(_label(str(active_member.get("name", "")).split(",")[0].split(" of the ")[0], 10, active_member.get("color", CYAN)))
+        else:
+            slot_col.add_child(_label("＋", 28, MUTED))
+            slot_col.add_child(_label("EMPTY SLOT", 9, MUTED))
+        slots.add_child(slot_col)
+    party_col.add_child(slots)
     party.add_child(party_col)
     content.add_child(party)
     if roster.is_empty():
@@ -510,10 +584,8 @@ func _show_roster() -> void:
         return
     for member in roster:
         var card := _panel(PANEL, 9, member.get("color", Color("#35466c")))
-        content.add_child(card)
         var row := HBoxContainer.new()
         row.add_theme_constant_override("separation", 9)
-        card.add_child(row)
         row.add_child(_portrait(str(member.get("slug", "airi")), 96, 126))
         var info := VBoxContainer.new()
         info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -525,7 +597,32 @@ func _show_roster() -> void:
         info.add_child(_label("Lv.%d  ·  Copies %d  ·  Bond %d" % [member["level"], member["copies"], member["bond"]], 9, CYAN))
         info.add_child(_label(str(member["skill"]), 10, TEXT))
         row.add_child(info)
-        row.add_child(_button("TRAIN\n80 G", func(): _train(member), 46))
+        var actions := VBoxContainer.new()
+        actions.custom_minimum_size.x = 72
+        actions.add_child(_button("TRAIN\n80 G", func(): _train(member), 43))
+        var in_party := team_names.has(str(member["name"]))
+        actions.add_child(_button("LEAVE" if in_party else "ADD\nPARTY", func(): _toggle_team(member), 43))
+        row.add_child(actions)
+        card.add_child(row)
+        content.add_child(card)
+
+func _member_by_name(member_name: String) -> Dictionary:
+    for member in roster:
+        if str(member.get("name", "")) == member_name:
+            return member
+    return {}
+
+func _toggle_team(member: Dictionary) -> void:
+    var member_name := str(member.get("name", ""))
+    if team_names.has(member_name):
+        team_names.erase(member_name)
+    elif team_names.size() < 3:
+        team_names.append(member_name)
+    else:
+        _notice("Your party already has three companions. Remove one before adding another.")
+        return
+    _save_game()
+    show_tab("Roster")
 
 func _train(member: Dictionary) -> void:
     if gold < 80:
@@ -534,6 +631,7 @@ func _train(member: Dictionary) -> void:
     gold -= 80
     member["level"] += 1
     member["bond"] += 2
+    _save_game()
     show_tab("Roster")
 
 func _show_expeditions() -> void:
@@ -575,8 +673,8 @@ func _start_battle(place: String, cost: int, enemy_hp: int, reward_gold: int, re
     if stamina < cost:
         _notice("Not enough stamina. Rest by advancing the day.")
         return
-    if roster.size() < 3:
-        _notice("Recruit at least 3 companions before departing.")
+    if team_names.size() < 3:
+        _notice("Choose three companions in the Heroes tab before departing.")
         return
     stamina -= cost
     var power := _team_power()
@@ -607,18 +705,22 @@ func _start_battle(place: String, cost: int, enemy_hp: int, reward_gold: int, re
         battle_log = "%s cleared in %d rounds. +%d gold, +%d gems.\\n" % [place, rounds, reward_gold, reward_gems] + "\\n".join(lines)
     else:
         battle_log = "%s: your crew withdrew after 8 rounds. Train or improve your village.\\n" % place + "\\n".join(lines)
+    _save_game()
     _refresh_status()
     show_tab("Expeditions")
 
 func _team_power() -> int:
     var total := 0
-    for i in range(min(3, roster.size())):
-        total += int(roster[i]["power"]) + (int(roster[i]["level"]) - 1) * 8
+    for member_name in team_names:
+        var member := _member_by_name(member_name)
+        if not member.is_empty():
+            total += int(member["power"]) + (int(member["level"]) - 1) * 8
     return total
 
 func _has_role(role: String) -> bool:
-    for member in roster:
-        if member["role"] == role:
+    for member_name in team_names:
+        var member := _member_by_name(member_name)
+        if not member.is_empty() and str(member.get("role", "")) == role:
             return true
     return false
 
@@ -650,6 +752,7 @@ func _upgrade_building(building: Dictionary) -> void:
     for b in buildings:
         total_levels += int(b["level"]) - 1
     village_level = 1 + int(total_levels / 3)
+    _save_game()
     show_tab("Village")
 
 func _show_events() -> void:
@@ -680,9 +783,12 @@ func _show_events() -> void:
     content.add_child(_button("BACK TO SANCTUARY", func(): show_tab("Sanctuary"), 42))
 
 func _claim_event() -> void:
+    if event_claimed:
+        return
     event_claimed = true
     gold += 120
     gems += 30
+    _save_game()
     _refresh_status()
     show_tab("Events")
 
@@ -720,6 +826,7 @@ func _claim_daily() -> void:
     gold += 120
     gems += 15
     stamina = mini(12 + (_building_level("Wayfarer Hall") - 1) * 3, stamina + 3)
+    _save_game()
     _refresh_status()
     show_tab("Sanctuary")
 
@@ -731,6 +838,7 @@ func _next_day() -> void:
     gems += 5 * _building_level("Moonwell")
     for member in roster:
         member["bond"] += 1
+    _save_game()
     _refresh_status()
     show_tab("Sanctuary")
 
