@@ -29,6 +29,28 @@ jobs:
           use-dotnet: false
           include-templates: true
 
+      - name: Install Godot Android export templates explicitly
+        shell: bash
+        run: |
+          set -euo pipefail
+          TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/4.4.1.stable"
+          mkdir -p "$TEMPLATE_DIR" "$RUNNER_TEMP/godot-templates"
+          curl --fail --location --retry 3 --retry-delay 2 \
+            "https://github.com/godotengine/godot-builds/releases/download/4.4.1-stable/Godot_v4.4.1-stable_export_templates.tpz" \
+            --output "$RUNNER_TEMP/godot-templates/export_templates.tpz"
+          unzip -q -o "$RUNNER_TEMP/godot-templates/export_templates.tpz" -d "$RUNNER_TEMP/godot-templates/unpacked"
+          if [ -d "$RUNNER_TEMP/godot-templates/unpacked/templates" ]; then
+            cp -a "$RUNNER_TEMP/godot-templates/unpacked/templates/." "$TEMPLATE_DIR/"
+          else
+            echo "Unexpected Godot export template archive layout:"
+            find "$RUNNER_TEMP/godot-templates/unpacked" -maxdepth 3 -type f | head -80
+            exit 1
+          fi
+          echo "Installed templates:"
+          ls -lh "$TEMPLATE_DIR"
+          test -s "$TEMPLATE_DIR/android_debug.apk"
+          test -s "$TEMPLATE_DIR/android_release.apk"
+
       - name: Set up Java
         uses: actions/setup-java@v5
         with:
