@@ -76,6 +76,12 @@ jobs:
           p.write_text(s, encoding="utf-8")
           print("Android debug signing configured.")
           PY
+          echo "Godot executable: $(command -v godot)"
+          godot --version
+          test -d "$ANDROID_HOME/platforms/android-35"
+          test -d "$ANDROID_HOME/build-tools/35.0.0"
+          test -f "$HOME/.android/debug.keystore"
+          find "$HOME/.local/share/godot" "$HOME/.config/godot" -maxdepth 4 -type f 2>/dev/null | head -80 || true
 
       - name: Import project and validate scripts
         shell: bash
@@ -92,7 +98,13 @@ jobs:
         run: |
           set -euo pipefail
           godot --headless --path . --export-debug "Android" build/NEBULIA-debug.apk --verbose 2>&1 | tee godot-export.log
-          test -s build/NEBULIA-debug.apk
+          if ! test -s build/NEBULIA-debug.apk; then
+            echo "APK export failed. Recent export diagnostics:"
+            grep -Ei "error|warning|android|template|sdk|keystore|gradle|export" godot-export.log | tail -160 || true
+            echo "Installed Android export templates:"
+            find "$HOME/.local/share/godot" -maxdepth 6 -type f 2>/dev/null | grep -Ei 'android|template' | head -100 || true
+            exit 1
+          fi
           ls -lh build/NEBULIA-debug.apk
           sha256sum build/NEBULIA-debug.apk
 
