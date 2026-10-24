@@ -53,9 +53,28 @@ jobs:
           EOF
           godot --headless --path game --editor --quit --verbose
 
+      - name: Configure debug signing in export preset
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("game/export_presets.cfg")
+          s = p.read_text()
+          replacements = {
+              'keystore/debug=""': 'keystore/debug="' + str(Path.home() / ".android/debug.keystore") + '"',
+              'keystore/debug_user=""': 'keystore/debug_user="androiddebugkey"',
+              'keystore/debug_password=""': 'keystore/debug_password="android"',
+          }
+          for old, new in replacements.items():
+              if old not in s:
+                  raise SystemExit("Missing Android preset field: " + old)
+              s = s.replace(old, new, 1)
+          p.write_text(s)
+          print("Android debug keystore configured in export preset.")
+          PY
+
       - name: Export Android APK
         run: |
-          godot --headless --path game --export-debug "Android" build/NEBULIA.apk --verbose
+          godot --headless --path game --export-debug "Android" ../build/NEBULIA.apk --verbose
 
       - name: Verify APK
         run: |
