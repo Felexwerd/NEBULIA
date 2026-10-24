@@ -1,82 +1,14 @@
-name: Build NEBULIA Android APK
+name: Legacy Android prototype build (manual only)
 
 on:
-  push:
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  build:
+  notice:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Show uploaded source archive
-        run: |
-          set -euo pipefail
-          test -f NEBULIA_Android_Project.zip
-          echo "Source archive size:"
-          stat -c '%s bytes' NEBULIA_Android_Project.zip
-          sha256sum NEBULIA_Android_Project.zip
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: 'platform-tools'
-
-      - name: Install Android SDK platform
-        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-
-      - name: Extract current project archive
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p extracted
-          unzip -q NEBULIA_Android_Project.zip -d extracted
-          SETTINGS_FILE="$(find extracted -type f -name settings.gradle -print -quit)"
-          if [ -z "$SETTINGS_FILE" ]; then
-            echo "::error::Не найден settings.gradle внутри NEBULIA_Android_Project.zip"
-            find extracted -maxdepth 5 -type f | head -200
-            exit 1
-          fi
-          PROJECT_DIR="$(dirname "$SETTINGS_FILE")"
-          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-          echo "Using project at: $PROJECT_DIR"
-          echo "Main source file:"
-          find "$PROJECT_DIR/app/src/main" -type f -maxdepth 10 -printf '%p (%s bytes)\n'
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.13'
-
-      - name: Build debug APK
-        run: gradle -p "$PROJECT_DIR" clean assembleDebug
-
-      - name: Verify APK and report its size
-        shell: bash
-        run: |
-          set -euo pipefail
-          APK="$(find "$PROJECT_DIR/app/build/outputs/apk/debug" -maxdepth 1 -name '*.apk' -print -quit)"
-          test -n "$APK"
-          test -s "$APK"
-          ls -lh "$APK"
-          sha256sum "$APK"
-          echo "APK_PATH=$APK" >> "$GITHUB_ENV"
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: NEBULIA-debug-APK
-          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
-          retention-days: 14
+      - name: Explain current build target
+        run: echo "The legacy button prototype is no longer built automatically. Use the NEBULIA playable game workflow for the new game-first project."
