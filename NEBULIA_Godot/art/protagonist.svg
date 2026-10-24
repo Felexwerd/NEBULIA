@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="460" viewBox="0 0 360 460">
+<defs>
+  <linearGradient id="cape" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#49c7cc"/><stop offset=".55" stop-color="#226b91"/><stop offset="1" stop-color="#172c57"/></linearGradient>
+  <linearGradient id="hair" x1="0" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#a3b9ee"/><stop offset=".35" stop-color="#5669ad"/><stop offset="1" stop-color="#23284f"/></linearGradient>
+  <linearGradient id="lantern" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff4c2"/><stop offset=".45" stop-color="#f7c96e"/><stop offset="1" stop-color="#8ce4ed"/></linearGradient>
+  <linearGradient id="coat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#253c69"/><stop offset="1" stop-color="#0c1735"/></linearGradient>
+  <filter id="softglow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="9"/></filter>
+</defs>
+<!-- starlight halo -->
+<ellipse cx="204" cy="212" rx="118" ry="158" fill="#79e8ed" opacity=".13" filter="url(#softglow)"/>
+<path d="M104 168 A112 112 0 0 1 296 164" fill="none" stroke="#f5d79a" stroke-width="2" opacity=".65"/>
+<circle cx="104" cy="168" r="4" fill="#fff0b8"/><circle cx="296" cy="164" r="3" fill="#fff0b8"/>
+<!-- cloak and shoulders -->
+<path d="M82 460 Q86 338 119 302 L154 277 L230 277 L270 309 Q310 365 317 460Z" fill="url(#cape)" stroke="#15284e" stroke-width="4"/>
+<path d="M122 320 L159 293 L188 335 L157 415 L115 377Z" fill="#62d9d6" opacity=".8"/>
+<path d="M249 317 L220 292 L190 335 L220 414 L269 372Z" fill="#244d83"/>
+<path d="M151 279 L226 279 L241 326 Q208 355 174 329Z" fill="#f3c8b1"/>
+<!-- inner tunic -->
+<path d="M153 316 L188 342 L224 315 L242 460 H135Z" fill="url(#coat)"/>
+<path d="M153 316 L188 342 L174 370 L143 337Z M224 315 L188 342 L203 370 L235 337Z" fill="#f6d18b"/>
+<path d="M183 341 L194 341 L210 411 L187 441 L166 411Z" fill="#2f8f9d" stroke="#f1d18d" stroke-width="2"/>
+<!-- collar -->
+<path d="M150 281 L181 317 L164 340 L129 300Z" fill="#e2edf3" stroke="#2c426d" stroke-width="3"/>
+<path d="M226 281 L194 317 L212 340 L247 300Z" fill="#9ee8e5" stroke="#2c426d" stroke-width="3"/>
+<!-- neck -->
+<path d="M165 247 L218 247 L226 292 Q190 322 155 291Z" fill="#f3c8b1"/>
+<!-- ears -->
+<ellipse cx="126" cy="191" rx="17" ry="24" fill="#eebda8"/><ellipse cx="251" cy="191" rx="17" ry="24" fill="#eebda8"/>
+<!-- hair back -->
+<path d="M113 181 Q82 67 184 48 Q274 47 270 165 L266 261 Q250 297 231 307 L220 236 L133 245 L128 302 Q102 285 94 242Z" fill="url(#hair)" stroke="#1b244e" stroke-width="4"/>
+<!-- face -->
+<path d="M127 147 Q129 96 182 91 Q236 95 247 147 L237 217 Q224 260 187 267 Q151 259 137 220Z" fill="#f5d0bc"/>
+<!-- fringe -->
+<path d="M115 172 Q102 91 162 73 Q209 54 246 104 Q261 125 251 170 L226 146 L214 119 L188 153 L164 124 L141 167Z" fill="url(#hair)" stroke="#1b244e" stroke-width="4" stroke-linejoin="round"/>
+<path d="M125 139 Q117 200 139 231 L147 247 L144 184Z" fill="#7787c8"/>
+<path d="M242 136 Q262 193 237 242 L226 252 L231 180Z" fill="#303b78"/>
+<!-- eyes -->
+<path d="M145 183 Q163 168 178 184 Q164 202 145 183Z" fill="#fff9e7"/><path d="M196 184 Q212 168 229 182 Q213 202 196 184Z" fill="#fff9e7"/>
+<ellipse cx="163" cy="185" rx="7" ry="10" fill="#287f9e"/><ellipse cx="211" cy="185" rx="7" ry="10" fill="#287f9e"/>
+<circle cx="165" cy="182" r="3.2" fill="#fff"/><circle cx="213" cy="182" r="3.2" fill="#fff"/>
+<path d="M141 175 Q160 164 180 176 M194 176 Q213 164 232 175" fill="none" stroke="#343b72" stroke-width="5" stroke-linecap="round"/>
+<path d="M181 213 Q187 218 193 213" fill="none" stroke="#bd7c80" stroke-width="3" stroke-linecap="round"/>
+<ellipse cx="145" cy="208" rx="13" ry="6" fill="#f18c9b" opacity=".22"/><ellipse cx="224" cy="208" rx="13" ry="6" fill="#f18c9b" opacity=".22"/>
+<!-- golden star hair clasp -->
+<path d="M240 112 l6 14 15 2 -11 10 3 15 -13 -8 -13 8 3 -15 -11 -10 15 -2Z" fill="#f7d98e" stroke="#8d6739" stroke-width="2"/>
+<!-- satchel -->
+<path d="M91 342 Q69 335 65 368 L79 410 L122 394 L117 359Z" fill="#9a735d" stroke="#f2d498" stroke-width="3"/>
+<path d="M76 365 L109 354" stroke="#f2d498" stroke-width="4"/>
+<!-- lantern raised on the right -->
+<path d="M270 306 Q295 278 297 240" stroke="#e8ce9a" stroke-width="7" fill="none" stroke-linecap="round"/>
+<path d="M274 237 Q279 215 297 216 Q315 218 320 237" fill="none" stroke="#f6d88b" stroke-width="5"/>
+<path d="M274 237 L282 276 L311 276 L320 237Z" fill="url(#lantern)" stroke="#fff1bd" stroke-width="4" stroke-linejoin="round"/>
+<path d="M283 243 L291 267 L302 243" fill="none" stroke="#ffffff" stroke-width="3" opacity=".9"/>
+<circle cx="297" cy="247" r="13" fill="#fff8d7" opacity=".9"/><circle cx="297" cy="247" r="22" fill="#a3f5ee" opacity=".2" filter="url(#softglow)"/>
+<path d="M297 229 l4 10 11 1 -8 7 2 11 -9 -6 -10 6 2 -11 -8 -7 11 -1Z" fill="#fffef1"/>
+<!-- small orbiting star motes -->
+<path d="M74 183 l4 9 10 1 -7 7 2 10 -9 -5 -9 5 2 -10 -7 -7 10 -1Z" fill="#f7d98e" opacity=".95"/>
+<circle cx="303" cy="91" r="3" fill="#dcfbff"/><circle cx="82" cy="277" r="2.5" fill="#dcfbff"/><circle cx="280" cy="348" r="3" fill="#f7d98e"/>
+<text x="185" y="445" font-family="serif" font-size="13" letter-spacing="2.7" text-anchor="middle" fill="#fff3cb" opacity=".94">EIRA VALE · WAYFARER</text>
+</svg>
