@@ -24,6 +24,12 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Restore stable Android debug keystore
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: nebulia-android-debug-keystore-v1
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
@@ -56,7 +62,18 @@ jobs:
 
       - name: Configure Godot Android export
         run: |
-          mkdir -p "$HOME/.config/godot"
+          mkdir -p "$HOME/.config/godot" "$HOME/.android"
+          if [ ! -f "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair -v \
+              -keystore "$HOME/.android/debug.keystore" \
+              -storetype JKS \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
+          test -s "$HOME/.android/debug.keystore"
           cat > "$HOME/.config/godot/editor_settings-4.tres" <<EOF
           [gd_resource type="EditorSettings" format=3]
           [resource]
@@ -78,6 +95,9 @@ jobs:
         run: |
           mkdir -p "$GITHUB_WORKSPACE/NEBULIA_Godot/build"
           APK_PATH="$GITHUB_WORKSPACE/NEBULIA_Godot/build/NEBULIA-debug.apk"
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$HOME/.android/debug.keystore"
+          export GODOT_ANDROID_KEYSTORE_DEBUG_USER="androiddebugkey"
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD="android"
           set -o pipefail
           godot --headless --verbose --path "$GITHUB_WORKSPACE/NEBULIA_Godot" --export-debug "Android" "$APK_PATH" 2>&1 | tee /tmp/godot-export.log
           # Godot 4.3 can print non-fatal diagnostics (for example missing optional
@@ -88,6 +108,7 @@ jobs:
           fi
           test -s "$APK_PATH"
           unzip -tq "$APK_PATH"
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose "$APK_PATH"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
