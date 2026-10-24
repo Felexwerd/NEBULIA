@@ -32,7 +32,7 @@ jobs:
       - name: Install Android build packages
         run: |
           yes | sdkmanager --licenses
-          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;23.2.8568313"
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "cmdline-tools;latest" "cmake;3.10.2.4988404" "ndk;23.2.8568313"
 
       - name: Download Godot 4.3
         run: |
@@ -43,6 +43,10 @@ jobs:
           wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz -O /tmp/templates.tpz
           unzip -q /tmp/templates.tpz -d /tmp/godot-templates
           cp -a /tmp/godot-templates/templates/. "$HOME/.local/share/godot/export_templates/4.3.stable/"
+          test -f "$HOME/.local/share/godot/export_templates/4.3.stable/android_source.zip"
+          mkdir -p NEBULIA_Godot/android/build
+          unzip -q "$HOME/.local/share/godot/export_templates/4.3.stable/android_source.zip" -d NEBULIA_Godot/android/build
+          test -f NEBULIA_Godot/android/build/build.gradle
 
       - name: Configure Godot Android export
         run: |
