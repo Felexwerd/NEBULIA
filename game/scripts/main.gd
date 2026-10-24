@@ -67,8 +67,16 @@ func _draw_ellipse(rect: Rect2, color: Color) -> void:
 		pts.append(rect.position + rect.size / 2.0 + Vector2(cos(a)*rect.size.x/2.0, sin(a)*rect.size.y/2.0))
 	draw_colored_polygon(pts, color)
 
+func _draw_arc_rect(rect: Rect2, start_angle: float, end_angle: float, points: int, color: Color, width: float = 1.0) -> void:
+	var pts := PackedVector2Array()
+	var center: Vector2 = rect.position + rect.size / 2.0
+	for i in range(points + 1):
+		var a: float = start_angle + (end_angle - start_angle) * float(i) / float(points)
+		pts.append(center + Vector2(cos(a) * rect.size.x / 2.0, sin(a) * rect.size.y / 2.0))
+	draw_polyline(pts, color, width, true)
+
 func _draw_round_rect(rect: Rect2, radius: float, color: Color, filled: bool = true, width: float = 1.0) -> void:
-	var r := min(radius, min(rect.size.x, rect.size.y) / 2.0)
+	var r: float = minf(radius, minf(rect.size.x, rect.size.y) / 2.0)
 	if filled:
 		draw_rect(Rect2(rect.position.x+r, rect.position.y, rect.size.x-2*r, rect.size.y), color)
 		draw_rect(Rect2(rect.position.x, rect.position.y+r, rect.size.x, rect.size.y-2*r), color)
@@ -77,10 +85,10 @@ func _draw_round_rect(rect: Rect2, radius: float, color: Color, filled: bool = t
 		draw_circle(rect.position+Vector2(r,rect.size.y-r), r, color)
 		draw_circle(rect.position+Vector2(rect.size.x-r,rect.size.y-r), r, color)
 	else:
-		draw_arc(Rect2(rect.position.x,rect.position.y,2*r,2*r),PI,PI*1.5,12,color,width,true)
-		draw_arc(Rect2(rect.end.x-2*r,rect.position.y,2*r,2*r),PI*1.5,TAU,12,color,width,true)
-		draw_arc(Rect2(rect.end.x-2*r,rect.end.y-2*r,2*r,2*r),0,PI*0.5,12,color,width,true)
-		draw_arc(Rect2(rect.position.x,rect.end.y-2*r,2*r,2*r),PI*0.5,PI,12,color,width,true)
+		_draw_arc_rect(Rect2(rect.position.x,rect.position.y,2*r,2*r),PI,PI*1.5,12,color,width)
+		_draw_arc_rect(Rect2(rect.end.x-2*r,rect.position.y,2*r,2*r),PI*1.5,TAU,12,color,width)
+		_draw_arc_rect(Rect2(rect.end.x-2*r,rect.end.y-2*r,2*r,2*r),0,PI*0.5,12,color,width)
+		_draw_arc_rect(Rect2(rect.position.x,rect.end.y-2*r,2*r,2*r),PI*0.5,PI,12,color,width)
 		draw_line(rect.position+Vector2(r,0),rect.position+Vector2(rect.size.x-r,0),color,width,true)
 		draw_line(rect.position+Vector2(r,rect.size.y),rect.position+Vector2(rect.size.x-r,rect.size.y),color,width,true)
 		draw_line(rect.position+Vector2(0,r),rect.position+Vector2(0,rect.size.y-r),color,width,true)
@@ -115,7 +123,7 @@ func _draw_river() -> void:
 		var x := 330.0 + i*23
 		var y := 946.0 + i*7
 		_draw_ellipse(Rect2(x,y,24,13),Color("#d4cbb6"))
-		draw_arc(Rect2(x,y,24,13),0,TAU,24,Color("#f3e6d1"),1.5,true)
+		_draw_arc_rect(Rect2(x,y,24,13),0,TAU,24,Color("#f3e6d1"),1.5)
 
 func _draw_paths() -> void:
 	var path := PackedVector2Array([Vector2(0,600),Vector2(120,620),Vector2(230,650),Vector2(360,630),Vector2(500,650),Vector2(720,625)])
@@ -167,13 +175,13 @@ func _draw_buildings() -> void:
 		_draw_round_rect(Rect2(p.x+26,p.y-21,25,20),5,Color("#f4e6c5"))
 		draw_string(ThemeDB.fallback_font,p+Vector2(31,-7),str(b.icon),HORIZONTAL_ALIGNMENT_LEFT,20,15,Color("#75547d"))
 		if selected_building == i:
-			draw_arc(Rect2(p.x-73,p.y+38,146,30),0,TAU,48,Color("#ffe5a4"),3.0,true)
+			_draw_arc_rect(Rect2(p.x-73,p.y+38,146,30),0,TAU,48,Color("#ffe5a4"),3.0)
 		draw_circle(p+Vector2(-66,8),5,Color("#ffdf91",0.85))
 		draw_circle(p+Vector2(68,10),5,Color("#ffdf91",0.85))
 
 func _draw_hero() -> void:
 	_draw_ellipse(Rect2(hero.x-23,hero.y+15,46,15),Color("#153a3d",0.38))
-	draw_arc(Rect2(hero.x-28,hero.y+8,56,19),0,TAU,32,Color("#c9c5ff",0.65),2.0,true)
+	_draw_arc_rect(Rect2(hero.x-28,hero.y+8,56,19),0,TAU,32,Color("#c9c5ff",0.65),2.0)
 	draw_colored_polygon(PackedVector2Array([hero+Vector2(-14,-29),hero+Vector2(15,-29),hero+Vector2(22,8),hero+Vector2(0,18),hero+Vector2(-21,8)]),Color("#6958a5"))
 	_draw_round_rect(Rect2(hero.x-14,hero.y-30,28,37),8,Color("#f0d8bd"))
 	draw_rect(Rect2(hero.x-13,hero.y-8,26,18),Color("#d7b5e9"))
@@ -183,7 +191,7 @@ func _draw_hero() -> void:
 	draw_colored_polygon(PackedVector2Array([hero+Vector2(-15,-44),hero+Vector2(-12,-59),hero+Vector2(1,-57),hero+Vector2(14,-50),hero+Vector2(8,-39),hero+Vector2(2,-49),hero+Vector2(-5,-43)]),Color("#4a3c6e"))
 	draw_circle(hero+Vector2(-5,-38),1.8,Color("#4d456e"))
 	draw_circle(hero+Vector2(5,-38),1.8,Color("#4d456e"))
-	draw_arc(Rect2(hero.x-5,hero.y-34,10,6),0.2,2.8,12,Color("#b76f79"),1.3)
+	_draw_arc_rect(Rect2(hero.x-5,hero.y-34,10,6),0.2,2.8,12,Color("#b76f79"),1.3)
 	for i in range(4):
 		var a := day_phase*0.7 + i*TAU/4
 		var sp := hero+Vector2(cos(a)*30,sin(a)*24-12)
@@ -216,7 +224,7 @@ func _draw_bottom_ui() -> void:
 	var tabs := ["village","heroes","quests","world"]
 	for i in range(4):
 		var x := 90.0 + i*180.0
-		var active := active_tab == tabs[i]
+		var active: bool = active_tab == tabs[i]
 		draw_circle(Vector2(x,1171),27,Color("#4d406d") if active else Color("#26344b"))
 		draw_string(ThemeDB.fallback_font,Vector2(x-13,1180),icons[i],HORIZONTAL_ALIGNMENT_LEFT,35,28,Color("#ffe4a9") if active else Color("#a9b7d1"))
 		draw_string(ThemeDB.fallback_font,Vector2(x-49,1223),labels[i],HORIZONTAL_ALIGNMENT_CENTER,98,14,Color("#f4dba8") if active else Color("#a5b4cc"))
@@ -252,7 +260,7 @@ func _draw_heroes_panel() -> void:
 		draw_circle(Vector2(105,y+81),54,c.color.darkened(0.15))
 		draw_circle(Vector2(105,y+63),28,c.color)
 		draw_circle(Vector2(105,y+49),31,c.hair)
-		draw_arc(Rect2(78,y+46,54,56),0,PI,24,c.hair.lightened(0.12),8.0,true)
+		_draw_arc_rect(Rect2(78,y+46,54,56),0,PI,24,c.hair.lightened(0.12),8.0)
 		draw_circle(Vector2(95,y+63),3,Color("#33344e"))
 		draw_circle(Vector2(115,y+63),3,Color("#33344e"))
 		draw_string(ThemeDB.fallback_font,Vector2(178,y+52),str(c.name),HORIZONTAL_ALIGNMENT_LEFT,400,25,Color("#fff0d8"))
@@ -313,7 +321,7 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_handle_tap(event.position)
 	elif event is InputEventScreenDrag:
-		var p := event.position
+		var p: Vector2 = event.position
 		if p.y > 170 and p.y < 1110:
 			target = _screen_to_game(p)
 	elif event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
