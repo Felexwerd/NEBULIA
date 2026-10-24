@@ -413,7 +413,7 @@ func _show_sanctuary() -> void:
     commission_col.add_child(_label("Reward: 80 gold + 20 gems", 10, MUTED))
     commission.add_child(commission_col)
     content.add_child(commission)
-    content.add_child(_button("REST UNTIL DAY %02d  ·  COLLECT VILLAGE INCOME" % (day + 1), _next_day, 43)
+    content.add_child(_button("REST UNTIL DAY %02d  ·  COLLECT VILLAGE INCOME" % (day + 1), _next_day, 43))
 
 func _stat_card(title: String, value: String, caption: String, accent: Color) -> Control:
     var panel := _panel(PANEL, 9, Color("#293858"))
@@ -450,7 +450,7 @@ func _show_summon() -> void:
     note_col.add_child(_label("ARCHIVE NOTES", 9, CYAN))
     note_col.add_child(_label("At least one SR or higher is guaranteed every 10 summons. Duplicates grant Bond and 15 gems.", 11, MUTED))
     note.add_child(note_col)
-    
+    content.add_child(note)
 
 func _summon(count: int) -> void:
     var cost := 100 if count == 1 else 900
