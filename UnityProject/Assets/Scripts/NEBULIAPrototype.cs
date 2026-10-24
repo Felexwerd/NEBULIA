@@ -52,6 +52,11 @@ public class NEBULIAPrototype : MonoBehaviour
         var blue=MakeMat(new Color(.26f,.43f,.68f));
         var woodMat=MakeMat(new Color(.36f,.20f,.16f));
         var leaves=MakeMat(new Color(.25f,.58f,.39f));
+        var leafLight=MakeMat(new Color(.38f,.70f,.46f));
+        var windowMat=MakeMat(new Color(1f,.77f,.36f));
+        var stone=MakeMat(new Color(.58f,.61f,.62f));
+        var flowerPink=MakeMat(new Color(.96f,.55f,.72f));
+        var flowerGold=MakeMat(new Color(1f,.79f,.38f));
         Box("Meadow",new Vector3(0,-.35f,0),new Vector3(34,.5f,26),grass);
         Box("Main road",new Vector3(0,-.06f,0),new Vector3(3.4f,.08f,26),road);
         Box("Crossroad",new Vector3(-3.2f,-.05f,1.7f),new Vector3(19,.09f,2.5f),road);
@@ -61,6 +66,23 @@ public class NEBULIAPrototype : MonoBehaviour
         House("Sunrise Farm",new Vector3(6.5f,0,5.4f),wall,blue,woodMat);
         House("Craftsman's Hall",new Vector3(-7,0,-5.4f),wall,blue,woodMat);
         House("Village Cottage",new Vector3(5.8f,0,-5.8f),wall,red,woodMat);
+        // Cozy details make the village read as a lived-in fantasy settlement.
+        for(int i=0;i<8;i++){
+            float x=-10.5f+i*3.0f;
+            if(Mathf.Abs(x)<3.8f) continue;
+            Box("Roadside stepping stone",new Vector3(x,.015f,0),new Vector3(.52f,.04f,.34f),stone);
+            Box("Lantern post",new Vector3(x,.65f,-1.9f),new Vector3(.13f,1.3f,.13f),woodMat);
+            var glow=GameObject.CreatePrimitive(PrimitiveType.Sphere); glow.name="Warm lantern";
+            glow.transform.position=new Vector3(x,1.35f,-1.9f); glow.transform.localScale=Vector3.one*.28f;
+            glow.GetComponent<Renderer>().sharedMaterial=windowMat;
+        }
+        for(int i=0;i<30;i++){
+            float x=-15f+(i*2.31f)%29f, z=-10.5f+(i*1.79f)%21f;
+            if(Mathf.Abs(x)<4.2f || Mathf.Abs(x-12f)<3.2f || (Mathf.Abs(z)<2f && Mathf.Abs(x)<10f)) continue;
+            var bloom=GameObject.CreatePrimitive(PrimitiveType.Sphere); bloom.name="Meadow flower";
+            bloom.transform.position=new Vector3(x,.12f,z); bloom.transform.localScale=new Vector3(.13f,.10f,.13f);
+            bloom.GetComponent<Renderer>().sharedMaterial=(i%2==0)?flowerPink:flowerGold;
+        }
         for(int i=0;i<22;i++){
             float x=-15+(i*1.73f)%28, z=-11+(i*3.17f)%22;
             if(Mathf.Abs(x)<3||Mathf.Abs(x-12)<3) continue;
@@ -70,6 +92,9 @@ public class NEBULIAPrototype : MonoBehaviour
             var crown=GameObject.CreatePrimitive(PrimitiveType.Sphere);
             crown.transform.position=new Vector3(x,1.45f,z); crown.transform.localScale=Vector3.one*1.25f;
             crown.GetComponent<Renderer>().sharedMaterial=leaves;
+            var crown2=GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            crown2.name="Tree sunlit foliage"; crown2.transform.position=new Vector3(x-.28f,1.62f,z+.18f);
+            crown2.transform.localScale=Vector3.one*.78f; crown2.GetComponent<Renderer>().sharedMaterial=leafLight;
         }
         for(int i=0;i<7;i++){
             var v=GameObject.CreatePrimitive(PrimitiveType.Capsule);
@@ -95,9 +120,22 @@ public class NEBULIAPrototype : MonoBehaviour
     void House(string n,Vector3 p,Material wall,Material roof,Material woodMat)
     {
         Box(n+" walls",p+new Vector3(0,1.1f,0),new Vector3(3.1f,2.1f,2.7f),wall);
-        Box(n+" roof",p+new Vector3(0,2.5f,0),new Vector3(3.5f,.45f,3.1f),roof);
+        // Two sloped roof planes instead of a flat block.
+        var leftRoof=GameObject.CreatePrimitive(PrimitiveType.Cube); leftRoof.name=n+" left roof slope";
+        leftRoof.transform.position=p+new Vector3(-.78f,2.48f,0); leftRoof.transform.localScale=new Vector3(1.95f,.28f,3.25f);
+        leftRoof.transform.rotation=Quaternion.Euler(0,0,-27f); leftRoof.GetComponent<Renderer>().sharedMaterial=roof;
+        var rightRoof=GameObject.CreatePrimitive(PrimitiveType.Cube); rightRoof.name=n+" right roof slope";
+        rightRoof.transform.position=p+new Vector3(.78f,2.48f,0); rightRoof.transform.localScale=new Vector3(1.95f,.28f,3.25f);
+        rightRoof.transform.rotation=Quaternion.Euler(0,0,27f); rightRoof.GetComponent<Renderer>().sharedMaterial=roof;
         Box(n+" door",p+new Vector3(0,.55f,-1.37f),new Vector3(.6f,1.1f,.1f),woodMat);
         Box(n+" porch",p+new Vector3(0,.1f,-1.65f),new Vector3(1.8f,.15f,.8f),woodMat);
+        var leftWindow=GameObject.CreatePrimitive(PrimitiveType.Cube); leftWindow.name=n+" left glowing window";
+        leftWindow.transform.position=p+new Vector3(-.92f,1.25f,-1.38f); leftWindow.transform.localScale=new Vector3(.48f,.58f,.08f);
+        leftWindow.GetComponent<Renderer>().sharedMaterial=MakeMat(new Color(.98f,.75f,.38f));
+        var rightWindow=GameObject.CreatePrimitive(PrimitiveType.Cube); rightWindow.name=n+" right glowing window";
+        rightWindow.transform.position=p+new Vector3(.92f,1.25f,-1.38f); rightWindow.transform.localScale=new Vector3(.48f,.58f,.08f);
+        rightWindow.GetComponent<Renderer>().sharedMaterial=leftWindow.GetComponent<Renderer>().sharedMaterial;
+        Box(n+" signboard",p+new Vector3(0,2.0f,-1.52f),new Vector3(1.1f,.28f,.10f),woodMat);
     }
 
     void BuildHUD()
