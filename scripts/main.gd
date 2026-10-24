@@ -31,14 +31,54 @@ var toast_label: Label
 var toast_timer := 0.0
 var elapsed := 0.0
 var viewed_both := false
+var income_notice_shown := false
+var save_elapsed := 0.0
 
 func _ready() -> void:
+    _load_game()
     _build_interface()
     _show_tab("village")
     _refresh_header()
 
+func _notification(what: int) -> void:
+    if what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_PREDELETE:
+        _save_game()
+
+func _save_game() -> void:
+    var data := ConfigFile.new()
+    data.set_value("resources", "gold", gold)
+    data.set_value("resources", "food", food)
+    data.set_value("resources", "wood", wood)
+    data.set_value("resources", "town_level", town_level)
+    data.set_value("resources", "total_income", total_income)
+    data.set_value("progress", "viewed_both", viewed_both)
+    data.set_value("progress", "income_notice_shown", income_notice_shown)
+    data.set_value("buildings", "items", buildings)
+    data.set_value("characters", "items", characters)
+    data.set_value("quests", "items", quests)
+    data.save("user://nebulia_save.cfg")
+
+func _load_game() -> void:
+    var data := ConfigFile.new()
+    if data.load("user://nebulia_save.cfg") != OK:
+        return
+    gold = int(data.get_value("resources", "gold", gold))
+    food = int(data.get_value("resources", "food", food))
+    wood = int(data.get_value("resources", "wood", wood))
+    town_level = int(data.get_value("resources", "town_level", town_level))
+    total_income = int(data.get_value("resources", "total_income", total_income))
+    viewed_both = bool(data.get_value("progress", "viewed_both", viewed_both))
+    income_notice_shown = bool(data.get_value("progress", "income_notice_shown", income_notice_shown))
+    buildings = data.get_value("buildings", "items", buildings)
+    characters = data.get_value("characters", "items", characters)
+    quests = data.get_value("quests", "items", quests)
+
 func _process(delta: float) -> void:
     elapsed += delta
+    save_elapsed += delta
+    if save_elapsed >= 10.0:
+        save_elapsed = 0.0
+        _save_game()
     toast_timer = maxf(0.0, toast_timer - delta)
     if toast_timer == 0.0:
         toast_label.text = ""
@@ -50,7 +90,10 @@ func _process(delta: float) -> void:
             income += int(b["income"]) * int(b["level"])
         gold += income
         total_income += income
+        food += int(buildings[1]["level"]) * 2
+        wood += int(buildings[2]["level"])
         _refresh_header()
+        _save_game()
         _check_quests()
 
 func _build_interface() -> void:
@@ -184,7 +227,7 @@ func _show_village() -> void:
         _label(card, "Уровень "+str(b["level"]), 16, "#9fdcff")
         _label(card, str(b["desc"]), 14, "#d4e0ee")
         _label(card, "Доход: "+str(int(b["income"])*int(b["level"]))+" зол./цикл", 14, "#a9e5bd")
-        _button(card, "Улучшить · "+str(b["cost"])+" зол.", func(): _upgrade_building(i))
+        _button(card, "Улучшить · "+str(b["cost"])+" зол.", _upgrade_building.bind(i))
     var hero_row := HBoxContainer.new()
     content.add_child(hero_row)
     var welcome := _panel(hero_row)
@@ -216,7 +259,7 @@ func _show_characters() -> void:
         _label(info, str(c["name"])+"  ·  "+str(c["rarity"]), 21, "#ffe6a8")
         _label(info, str(c["role"])+" · Ур. "+str(c["level"]), 16, "#9fdcff")
         _label(info, str(c["hair"]), 14, "#d4e0ee")
-        _button(info, "Осмотреть и поговорить", func(): _inspect_character(i))
+        _button(info, "Осмотреть и поговорить", _inspect_character.bind(i))
     _label(content, "Подсказка: профили открывают личные истории и отношения героев.", 14, "#9aaec6")
 
 func _inspect_character(index: int) -> void:
@@ -263,7 +306,7 @@ func _show_quests() -> void:
         _label(card, str(q["desc"]), 15)
         _label(card, "Награда: "+str(q["reward"])+" золота", 14, "#9fdcff")
         if not q["done"]:
-            _button(card, "Проверить задание", func(): _claim_quest(i))
+            _button(card, "Проверить задание", _claim_quest.bind(i))
         else:
             _label(card, "Выполнено", 14, "#a9e5bd")
 
@@ -290,7 +333,8 @@ func _claim_quest(index: int) -> void:
 func _check_quests() -> void:
     if quests.is_empty():
         return
-    if total_income >= 100 and not quests[1]["done"]:
+    if total_income >= 100 and not quests[1]["done"] and not income_notice_shown:
+        income_notice_shown = true
         _toast("Цель выполнена: накоплено 100 золота дохода!")
     _refresh_header()
 
