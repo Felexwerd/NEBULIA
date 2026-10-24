@@ -1,17 +1,18 @@
 # NEBULIA
 
-NEBULIA — anime fantasy life-simulation RPG prototype built with Godot 4.
+NEBULIA is an anime fantasy village-management / idle life-simulation RPG prototype built with Godot 4. Its target gameplay direction is the town growth, passive production, character collection, relationship progression, quests, and resource-management loop found in games such as Isekai: Slow Life. It uses original names and placeholder art rather than copying proprietary assets.
 
-## Current playable foundation
-- Stylized village scene drawn by GDScript.
-- Character movement by clicking or touching the ground.
-- Short introductory tutorial.
-- Character inspection overlays for Eliana and Liara.
-- Procedural idle motion, blinking, and subtle hair/cloak movement.
-- Basic resource gathering and starter stats.
+## Current prototype
+- Village management screen with three upgradeable buildings.
+- Passive gold income while browsing menus.
+- Gold, food, wood, building levels, and settlement progression.
+- Character collection and profile screens for Eliana and Liara.
+- Affection values and a simple gift action.
+- Quest board with rewards and basic completion checks.
+- Small trading page for supplies.
 
 ## Run
-Open the repository folder in Godot 4.x and run `scenes/main.tscn` or press Play Project.
+Open the repository in Godot 4.x and run `scenes/main.tscn`.
 
-## Current limitations
-This is an early playable foundation, not a finished game. The current characters are procedural placeholder art, not the polished anime portraits shown in concept art. Production-quality animation needs layered character art or rigged models and animation clips. Planned next steps: replace placeholder art, add save data, buildings, quests, inventory, dialogue choices, and Android export automation.
+## Important limitations
+This is an early gameplay prototype, not a finished mobile game. The character portraits are placeholders; proper anime art and smooth character animations require dedicated assets/rigs. Persistence, deeper production chains, recruitment, story chapters, polished mobile UI, sound, and Android export/testing still need implementation.
