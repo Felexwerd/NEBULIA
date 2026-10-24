@@ -80,11 +80,14 @@ jobs:
           APK_PATH="$GITHUB_WORKSPACE/NEBULIA_Godot/build/NEBULIA-debug.apk"
           set -o pipefail
           godot --headless --verbose --path "$GITHUB_WORKSPACE/NEBULIA_Godot" --export-debug "Android" "$APK_PATH" 2>&1 | tee /tmp/godot-export.log
-          if grep -E "ERROR:|Export:|Android SDK|Gradle|Could not|not found|missing" /tmp/godot-export.log; then
-            echo "Godot Android export reported errors."
+          # Godot 4.3 can print non-fatal diagnostics (for example missing optional
+          # icon metadata) while still producing a valid APK. Validate the artifact itself.
+          if grep -E "Cannot export project with preset|Project export for preset .* failed|Target folder does not exist" /tmp/godot-export.log; then
+            echo "Godot Android export failed."
             exit 1
           fi
           test -s "$APK_PATH"
+          unzip -tq "$APK_PATH"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
