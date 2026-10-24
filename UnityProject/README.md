@@ -17,4 +17,11 @@ This folder is the new engine project for the Android anime-fantasy village RPG.
 The main scene procedurally creates a stylized village, houses, river and bridge, trees, residents, a mobile HUD, resource income, tavern upgrades, quest/hero panels, and crystal recruitment. This is a foundation, not the finished game: final anime character art, animated characters, deeper story/quests, save system, weather/day-night, and proper combat still need to be implemented.
 
 ## Android builds
-An installable APK is not checked into source control. Unity's Android build needs a locally activated Unity Editor or a properly configured Unity build service. The old Godot workflow does not build this Unity project.
+The GitHub Actions workflow **NEBULIA Unity Android APK** can build an APK manually. It requires Unity licensing credentials configured as repository Actions secrets:
+- `UNITY_LICENSE` — Unity license file contents (or the license format accepted by GameCI)
+- `UNITY_EMAIL` — Unity account email
+- `UNITY_PASSWORD` — Unity account password
+
+Open **Actions → NEBULIA Unity Android APK → Run workflow**. When the run succeeds, download the `NEBULIA-Android-APK` artifact from the run summary. Do not add credentials to repository files. If the secrets are not configured or the license cannot be activated, the workflow will fail before producing an APK.
+
+The APK has not yet been built or runtime-tested in this repository. The old Godot workflow does not build this Unity project.
