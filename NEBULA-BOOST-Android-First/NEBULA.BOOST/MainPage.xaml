@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="NebulaBoost.MainPage"
+             BackgroundColor="{StaticResource Bg}"
+             Shell.NavBarIsVisible="False">
+    <ScrollView>
+        <VerticalStackLayout Padding="22,28,22,30" Spacing="18">
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                <VerticalStackLayout Spacing="2">
+                    <Label Text="NEBULA" FontSize="13" CharacterSpacing="4"
+                           TextColor="{StaticResource Accent2}" FontAttributes="Bold"/>
+                    <Label x:Name="TitleLabel" Text="BOOST" FontSize="34"
+                           FontAttributes="Bold" TextColor="{StaticResource TextMain}"/>
+                </VerticalStackLayout>
+                <Border Grid.Column="1" Stroke="#353B47" StrokeThickness="1"
+                        BackgroundColor="{StaticResource Panel}" Padding="12,8"
+                        StrokeShape="RoundRectangle 12" VerticalOptions="Center">
+                    <HorizontalStackLayout Spacing="6">
+                        <Label Text="●" TextColor="{StaticResource Accent}" FontSize="12" VerticalOptions="Center"/>
+                        <Label x:Name="StatusLabel" Text="READY" TextColor="{StaticResource TextMain}"
+                               FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
+                    </HorizontalStackLayout>
+                </Border>
+                <Label x:Name="SubtitleLabel" Grid.Row="1" Text="Gaming performance companion"
+                       TextColor="{StaticResource TextMuted}" FontSize="13" Margin="0,3,0,0"/>
+            </Grid>
+
+            <Border BackgroundColor="{StaticResource Panel}" Stroke="#292F3A" StrokeThickness="1"
+                    StrokeShape="RoundRectangle 22" Padding="18">
+                <VerticalStackLayout Spacing="13">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Spacing="4">
+                            <Label x:Name="DeviceHeading" Text="DEVICE STATUS" TextColor="{StaticResource TextMuted}"
+                                   FontSize="11" CharacterSpacing="1.5" FontAttributes="Bold"/>
+                            <Label x:Name="DeviceNameLabel" Text="Android device" TextColor="{StaticResource TextMain}"
+                                   FontSize="21" FontAttributes="Bold"/>
+                        </VerticalStackLayout>
+                        <Border Grid.Column="1" BackgroundColor="#2A1918" Stroke="#5A2B26"
+                                StrokeShape="RoundRectangle 14" Padding="11" VerticalOptions="Center">
+                            <Label Text="NB" TextColor="{StaticResource Accent}" FontSize="18" FontAttributes="Bold"/>
+                        </Border>
+                    </Grid>
+                    <BoxView HeightRequest="1" Color="#2B303B"/>
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <Border BackgroundColor="{StaticResource PanelAlt}" Stroke="#292F3A"
+                                StrokeShape="RoundRectangle 14" Padding="12">
+                            <VerticalStackLayout Spacing="5">
+                                <Label x:Name="OsTitleLabel" Text="SYSTEM" FontSize="10" TextColor="{StaticResource TextMuted}" CharacterSpacing="1"/>
+                                <Label x:Name="OsValueLabel" Text="Android" FontSize="16" TextColor="{StaticResource TextMain}" FontAttributes="Bold"/>
+                            </VerticalStackLayout>
+                        </Border>
+                        <Border Grid.Column="1" BackgroundColor="{StaticResource PanelAlt}" Stroke="#292F3A"
+                                StrokeShape="RoundRectangle 14" Padding="12">
+                            <VerticalStackLayout Spacing="5">
+                                <Label x:Name="RamTitleLabel" Text="MEMORY" FontSize="10" TextColor="{StaticResource TextMuted}" CharacterSpacing="1"/>
+                                <Label x:Name="RamValueLabel" Text="Checking…" FontSize="16" TextColor="{StaticResource TextMain}" FontAttributes="Bold"/>
+                            </VerticalStackLayout>
+                        </Border>
+                    </Grid>
+                    <Label x:Name="DeviceNoteLabel" Text="Only data available to the app will be shown."
+                           FontSize="11" TextColor="{StaticResource TextMuted}"/>
+                </VerticalStackLayout>
+            </Border>
+
+            <Button x:Name="BoostButton" Text="RUN SMART CHECK" Clicked="OnBoostClicked"
+                    BackgroundColor="{StaticResource Accent}" TextColor="White"
+                    FontAttributes="Bold" FontSize="15" CornerRadius="16" HeightRequest="58"/>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <Border BackgroundColor="{StaticResource Panel}" Stroke="#292F3A" StrokeThickness="1"
+                        StrokeShape="RoundRectangle 18" Padding="15">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="◈" TextColor="{StaticResource Accent2}" FontSize="24"/>
+                        <Label x:Name="DiagnosticsTitleLabel" Text="Diagnostics" TextColor="{StaticResource TextMain}"
+                               FontSize="15" FontAttributes="Bold"/>
+                        <Label x:Name="DiagnosticsDescLabel" Text="Check supported device data" TextColor="{StaticResource TextMuted}"
+                               FontSize="11"/>
+                        <Button x:Name="DiagnosticsButton" Text="OPEN" Clicked="OnDiagnosticsClicked"
+                                BackgroundColor="#252B36" TextColor="White" FontSize="11"
+                                FontAttributes="Bold" CornerRadius="10" HeightRequest="38"/>
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Column="1" BackgroundColor="{StaticResource Panel}" Stroke="#292F3A" StrokeThickness="1"
+                        StrokeShape="RoundRectangle 18" Padding="15">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="⌘" TextColor="{StaticResource Accent2}" FontSize="24"/>
+                        <Label x:Name="GamesTitleLabel" Text="My Games" TextColor="{StaticResource TextMain}"
+                               FontSize="15" FontAttributes="Bold"/>
+                        <Label x:Name="GamesDescLabel" Text="Game profiles and tips" TextColor="{StaticResource TextMuted}"
+                               FontSize="11"/>
+                        <Button x:Name="GamesButton" Text="OPEN" Clicked="OnGamesClicked"
+                                BackgroundColor="#252B36" TextColor="White" FontSize="11"
+                                FontAttributes="Bold" CornerRadius="10" HeightRequest="38"/>
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+
+            <Border BackgroundColor="{StaticResource Panel}" Stroke="#292F3A" StrokeThickness="1"
+                    StrokeShape="RoundRectangle 18" Padding="16">
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Spacing="3">
+                        <Label x:Name="SettingsTitleLabel" Text="SETTINGS" FontSize="11" CharacterSpacing="1.5"
+                               TextColor="{StaticResource TextMuted}" FontAttributes="Bold"/>
+                        <Label x:Name="LanguageLabel" Text="Language / Язык" FontSize="15"
+                               TextColor="{StaticResource TextMain}" FontAttributes="Bold"/>
+                    </VerticalStackLayout>
+                    <HorizontalStackLayout Grid.Column="1" Spacing="8" VerticalOptions="Center">
+                        <Button x:Name="RuButton" Text="RU" Clicked="OnRussianClicked"
+                                BackgroundColor="#FF4B32" TextColor="White" CornerRadius="10" HeightRequest="38" WidthRequest="54"
+                                FontAttributes="Bold" FontSize="12"/>
+                        <Button x:Name="EnButton" Text="EN" Clicked="OnEnglishClicked"
+                                BackgroundColor="#252B36" TextColor="White" CornerRadius="10" HeightRequest="38" WidthRequest="54"
+                                FontAttributes="Bold" FontSize="12"/>
+                    </HorizontalStackLayout>
+                </Grid>
+            </Border>
+            <Label x:Name="FooterLabel" Text="NEBULA BOOST • EARLY BUILD"
+                   HorizontalTextAlignment="Center" TextColor="#656E7D" FontSize="10" CharacterSpacing="1.2"/>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
