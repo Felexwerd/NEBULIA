@@ -179,7 +179,68 @@ public partial class MainPage : ContentPage
         }
     }
 
-    private async void OnGamesClicked(object sender, EventArgs e)
+    private async void OnBoostClicked(object sender, EventArgs e)
+    {
+        var hasGame = !string.IsNullOrWhiteSpace(Preferences.Get("selected_game_package", ""));
+        var choices = _isRussian
+            ? (hasGame
+                ? new[] { "🎮 Выбрать другую игру", "▶ Запустить выбранную игру", "⚙ Изменить профиль игры" }
+                : new[] { "🎮 Выбрать игру", "🔋 Настройки батареи", "🖥 Настройки экрана" })
+            : (hasGame
+                ? new[] { "🎮 Choose another game", "▶ Launch selected game", "⚙ Edit game profile" }
+                : new[] { "🎮 Choose a game", "🔋 Battery settings", "🖥 Display settings" });
+
+        var choice = await DisplayActionSheet(_isRussian ? "ИГРОВОЙ ЦЕНТР" : "GAME CENTER",
+            _isRussian ? "Отмена" : "Cancel", null, choices);
+        if (string.IsNullOrWhiteSpace(choice) || choice == (_isRussian ? "Отмена" : "Cancel")) return;
+
+        if (choice.Contains(_isRussian ? "Выбрать" : "Choose"))
+        {
+            await ChooseGameAsync();
+            return;
+        }
+        if (choice.Contains(_isRussian ? "Запустить выбранную игру" : "Launch selected game"))
+        {
+            await LaunchSelectedGameAsync();
+            return;
+        }
+        if (choice.Contains(_isRussian ? "Изменить профиль игры" : "Edit game profile"))
+        {
+            await EditSelectedGameProfileAsync();
+            return;
+        }
+        if (choice.Contains(_isRussian ? "Настройки батареи" : "Battery settings"))
+        {
+            OpenAndroidSettings("android.settings.BATTERY_SAVER_SETTINGS");
+            return;
+        }
+        if (choice.Contains(_isRussian ? "Настройки экрана" : "Display settings"))
+            OpenAndroidSettings(Android.Provider.Settings.ActionDisplaySettings);
+    }
+
+    private void OpenAndroidSettings(string action)
+    {
+#if ANDROID
+        try
+        {
+            var intent = new Android.Content.Intent(action);
+            intent.AddFlags(ActivityFlags.NewTask);
+            Android.App.Application.Context.StartActivity(intent);
+        }
+        catch
+        {
+            MainThread.BeginInvokeOnMainThread(async () =>
+                await DisplayAlert(_isRussian ? "Настройки недоступны" : "Settings unavailable",
+                    _isRussian ? "На устройстве нет доступной страницы настроек для этого пункта."
+                               : "This settings page is not available on this device.",
+                    _isRussian ? "Закрыть" : "Close"));
+        }
+#endif
+    }
+
+    private async void OnGamesClicked(object sender, EventArgs e) => await ChooseGameAsync();
+
+    private async Task ChooseGameAsync()
     {
 #if ANDROID
         try
@@ -190,61 +251,65 @@ public partial class MainPage : ContentPage
             intent.AddCategory(Android.Content.Intent.CategoryLauncher);
             var activities = pm.QueryIntentActivities(intent, PackageInfoFlags.MatchAll);
             var apps = activities
-                .Where(x => x.ActivityInfo?.PackageName is not null
-                    && x.ActivityInfo.PackageName != context.PackageName)
-                .Select(x => new
-                {
-                    Name = x.LoadLabel(pm)?.ToString() ?? x.ActivityInfo!.PackageName!,
-                    Package = x.ActivityInfo!.PackageName!
-                })
-                .GroupBy(x => x.Package)
-                .Select(g => g.First())
-                .OrderBy(x => x.Name, StringComparer.CurrentCultureIgnoreCase)
-                .ToList();
+                .Where(x => x.ActivityInfo?.PackageName is not null && x.ActivityInfo.PackageName != context.PackageName)
+                .Select(x => new { Name = x.LoadLabel(pm)?.ToString() ?? x.ActivityInfo!.PackageName!, Package = x.ActivityInfo!.PackageName! })
+                .GroupBy(x => x.Package).Select(g => g.First())
+                .OrderBy(x => x.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
 
             if (apps.Count == 0)
             {
-                await DisplayAlert(_isRussian ? "Библиотека игр" : "Game library",
-                    _isRussian
-                        ? "Android не показал доступные приложения. Проверьте видимость приложений для этой сборки."
-                        : "Android returned no visible launchable apps. Check package visibility for this build.",
+                await DisplayAlert(_isRussian ? "Библиотека приложений" : "App library",
+                    _isRussian ? "Android не предоставил список доступных приложений." : "Android did not provide a list of visible apps.",
                     _isRussian ? "Закрыть" : "Close");
                 return;
             }
 
-            var options = apps.Select(x => x.Name).ToArray();
-            var chosen = await DisplayActionSheet(
-                _isRussian ? $"Приложения на устройстве ({apps.Count})" : $"Launchable apps ({apps.Count})",
-                _isRussian ? "Отмена" : "Cancel", null, options);
-
+            var names = apps.Select(x => x.Name).ToArray();
+            var chosen = await DisplayActionSheet(_isRussian ? $"Выбери игру или приложение ({apps.Count})" : $"Choose a game or app ({apps.Count})",
+                _isRussian ? "Отмена" : "Cancel", null, names);
             var selected = apps.FirstOrDefault(x => x.Name == chosen);
             if (selected is null) return;
 
             Preferences.Set("selected_game_name", selected.Name);
             Preferences.Set("selected_game_package", selected.Package);
-            SelectedGameActions.IsVisible = true;
             GamesDescLabel.Text = (_isRussian ? "Выбрано: " : "Selected: ") + selected.Name;
-            var launchIntent = pm.GetLaunchIntentForPackage(selected.Package);
-            if (launchIntent is not null)
-            {
-                launchIntent.AddFlags(ActivityFlags.NewTask);
-                context.StartActivity(launchIntent);
-            }
-            else
-            {
-                await DisplayAlert(_isRussian ? "Не удалось запустить" : "Cannot launch",
-                    _isRussian ? "У приложения нет доступного экрана запуска." : "This app has no launchable activity.",
-                    _isRussian ? "Закрыть" : "Close");
-            }
+            UpdateGameProfileSummary();
+
+            var launch = await DisplayAlert(_isRussian ? "Игра выбрана" : "Game selected",
+                _isRussian ? $"{selected.Name} сохранена. Запустить сейчас?" : $"{selected.Name} saved. Launch it now?",
+                _isRussian ? "Запустить" : "Launch", _isRussian ? "Позже" : "Later");
+            if (launch) await LaunchSelectedGameAsync();
         }
         catch (Exception ex)
         {
-            await DisplayAlert(_isRussian ? "Ошибка библиотеки" : "Game library error",
-                ex.Message, _isRussian ? "Закрыть" : "Close");
+            await DisplayAlert(_isRussian ? "Ошибка библиотеки" : "Library error", ex.Message,
+                _isRussian ? "Закрыть" : "Close");
         }
 #else
         await DisplayAlert("NEBULA BOOST", "Android-only feature.", "OK");
 #endif
+    }
+
+    private async void OnTipsClicked(object sender, EventArgs e)
+    {
+        var name = Preferences.Get("selected_game_name", "");
+        var packageName = Preferences.Get("selected_game_package", "");
+        if (string.IsNullOrWhiteSpace(packageName))
+        {
+            await DisplayAlert(_isRussian ? "Сначала выбери игру" : "Choose a game first",
+                _isRussian ? "Открой Игровой центр и выбери игру — тогда советы будут относиться к ней."
+                           : "Open Game Center and choose a game so the tips can be tailored to it.",
+                _isRussian ? "Понятно" : "OK");
+            return;
+        }
+
+        var graphics = Preferences.Get(ProfileKey(packageName, "graphics"), "Balanced");
+        var fps = Preferences.Get(ProfileKey(packageName, "fps"), "60");
+        var power = Preferences.Get(ProfileKey(packageName, "power"), "Balanced");
+        var tips = _isRussian
+            ? $"Советы для: {name}\n\n• Цель FPS: {fps}. Выбирай значение, которое реально поддерживает игра и экран.\n• Профиль графики: {graphics}. Если есть просадки, снизь качество теней и эффектов в самой игре.\n• Приоритет: {power}. Отключи энергосбережение перед длинной игровой сессией, если важна производительность.\n• Не играй во время зарядки, если телефон сильно нагревается; дай ему остыть.\n\nЭти советы не меняют настройки игры автоматически."
+            : $"Tips for: {name}\n\n• FPS target: {fps}. Pick a value supported by the game and display.\n• Graphics profile: {graphics}. If frames drop, lower shadows and effects in the game itself.\n• Priority: {power}. Disable battery saver before a long session if performance matters.\n• If the phone gets hot, pause charging/gameplay and let it cool.\n\nThese tips do not change the game's settings automatically.";
+        await DisplayAlert(_isRussian ? "Игровые советы" : "Game tips", tips, _isRussian ? "Готово" : "Done");
     }
 
     private async void OnLaunchSelectedGameClicked(object sender, EventArgs e) =>
@@ -462,13 +527,10 @@ public partial class MainPage : ContentPage
         DiagnosticsTitleLabel.Text = _isRussian ? "Диагностика" : "Diagnostics";
         DiagnosticsDescLabel.Text = _isRussian ? "Реальные данные устройства" : "Live device information";
         GamesTitleLabel.Text = _isRussian ? "Игры и приложения" : "Games & apps";
-        GamesDescLabel.Text = _isRussian ? "Выбрать и запустить приложение" : "Choose and launch an app";
+        GamesDescLabel.Text = _isRussian ? "Советы для выбранной игры" : "Tips for your selected game";
         DiagnosticsButton.Text = _isRussian ? "ПРОВЕРИТЬ" : "CHECK";
-        GamesButton.Text = _isRussian ? "ОТКРЫТЬ" : "OPEN";
-        LaunchSelectedGameButton.Text = _isRussian ? "ЗАПУСТИТЬ ИГРУ" : "LAUNCH GAME";
-        SelectedGameSettingsButton.Text = _isRussian ? "ПРОФИЛЬ ИГРЫ" : "GAME PROFILE";
+        GamesButton.Text = _isRussian ? "СОВЕТЫ" : "VIEW TIPS";
         var selectedGameName = Preferences.Get("selected_game_name", "");
-        SelectedGameActions.IsVisible = !string.IsNullOrWhiteSpace(selectedGameName);
         if (!string.IsNullOrWhiteSpace(selectedGameName))
             GamesDescLabel.Text = (_isRussian ? "Выбрано: " : "Selected: ") + selectedGameName;
         UpdateGameProfileSummary();
