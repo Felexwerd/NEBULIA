@@ -63,7 +63,7 @@
                 </VerticalStackLayout>
             </Border>
 
-            <Button x:Name="BoostButton" Text="RUN SMART CHECK" Clicked="OnBoostClicked"
+            <Button x:Name="BoostButton" Text="OPEN GAME CENTER" Clicked="OnBoostClicked"
                     BackgroundColor="{StaticResource Accent}" TextColor="White"
                     FontAttributes="Bold" FontSize="15" CornerRadius="16" HeightRequest="58"/>
 
