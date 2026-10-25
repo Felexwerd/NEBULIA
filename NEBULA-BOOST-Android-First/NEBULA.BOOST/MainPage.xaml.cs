@@ -93,7 +93,7 @@ public partial class MainPage : ContentPage
             var pm = context.PackageManager;
             var intent = new Android.Content.Intent(Android.Content.Intent.ActionMain);
             intent.AddCategory(Android.Content.Intent.CategoryLauncher);
-            var activities = pm.QueryIntentActivities(intent, 0);
+            var activities = pm.QueryIntentActivities(intent, PackageInfoFlags.MatchAll);
             var apps = activities
                 .Where(x => x.ActivityInfo?.PackageName is not null
                     && x.ActivityInfo.PackageName != context.PackageName)
