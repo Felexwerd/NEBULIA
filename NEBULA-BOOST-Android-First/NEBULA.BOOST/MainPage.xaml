@@ -72,11 +72,20 @@
                         Clicked="OnLaunchSelectedGameClicked" BackgroundColor="#252B36"
                         TextColor="White" FontAttributes="Bold" FontSize="11"
                         CornerRadius="12" HeightRequest="46"/>
-                <Button x:Name="SelectedGameSettingsButton" Grid.Column="1" Text="НАСТРОЙКИ ИГРЫ"
+                <Button x:Name="SelectedGameSettingsButton" Grid.Column="1" Text="ПРОФИЛЬ ИГРЫ"
                         Clicked="OnSelectedGameSettingsClicked" BackgroundColor="#252B36"
                         TextColor="White" FontAttributes="Bold" FontSize="11"
                         CornerRadius="12" HeightRequest="46"/>
             </Grid>
+            <Border x:Name="GameProfileCard" IsVisible="False" BackgroundColor="{StaticResource PanelAlt}"
+                    Stroke="#353B47" StrokeThickness="1" StrokeShape="RoundRectangle 14" Padding="13">
+                <VerticalStackLayout Spacing="5">
+                    <Label x:Name="GameProfileHeadingLabel" Text="ПРОФИЛЬ ИГРЫ" FontSize="10"
+                           CharacterSpacing="1.3" TextColor="{StaticResource Accent2}" FontAttributes="Bold"/>
+                    <Label x:Name="GameProfileSummaryLabel" Text="Профиль не настроен"
+                           FontSize="12" TextColor="{StaticResource TextMain}"/>
+                </VerticalStackLayout>
+            </Border>
 
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                 <Border BackgroundColor="{StaticResource Panel}" Stroke="#292F3A" StrokeThickness="1"
