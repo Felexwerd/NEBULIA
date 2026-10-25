@@ -34,43 +34,72 @@ public partial class MainPage : ContentPage
 
     private async void OnBoostClicked(object sender, EventArgs e)
     {
-        BoostButton.IsEnabled = false;
-        BoostButton.Text = _isRussian ? "ИДЁТ ПРОВЕРКА…" : "CHECKING…";
-        StatusLabel.Text = _isRussian ? "АНАЛИЗ…" : "ANALYZING…";
-        DeviceNoteLabel.Text = _isRussian
-            ? "Проверяем доступные показатели устройства…"
-            : "Checking available device metrics…";
+        // Replaced the misleading "boost" action with a useful Game Center menu.
+        var hasGame = !string.IsNullOrWhiteSpace(Preferences.Get("selected_game_package", ""));
+        var choices = _isRussian
+            ? (hasGame
+                ? new[] { "▶ Запустить выбранную игру", "🎮 Настроить профиль игры", "🔋 Настройки батареи", "🖥 Настройки экрана" }
+                : new[] { "🎮 Выбрать игру", "🔋 Настройки батареи", "🖥 Настройки экрана" })
+            : (hasGame
+                ? new[] { "▶ Launch selected game", "🎮 Edit game profile", "🔋 Battery settings", "🖥 Display settings" }
+                : new[] { "🎮 Choose a game", "🔋 Battery settings", "🖥 Display settings" });
 
+        var choice = await DisplayActionSheet(
+            _isRussian ? "ИГРОВОЙ ЦЕНТР" : "GAME CENTER",
+            _isRussian ? "Отмена" : "Cancel", null, choices);
+
+        if (string.IsNullOrWhiteSpace(choice) || choice == (_isRussian ? "Отмена" : "Cancel"))
+            return;
+
+        if (choice.Contains(_isRussian ? "Выбрать игру" : "Choose a game"))
+        {
+            OnGamesClicked(this, EventArgs.Empty);
+            return;
+        }
+        if (choice.Contains(_isRussian ? "Запустить выбранную игру" : "Launch selected game"))
+        {
+            await LaunchSelectedGameAsync();
+            return;
+        }
+        if (choice.Contains(_isRussian ? "Настроить профиль игры" : "Edit game profile"))
+        {
+            await EditSelectedGameProfileAsync();
+            return;
+        }
+        if (choice.Contains(_isRussian ? "Настройки батареи" : "Battery settings"))
+        {
+            OpenAndroidSettings("android.settings.BATTERY_SAVER_SETTINGS");
+            return;
+        }
+        if (choice.Contains(_isRussian ? "Настройки экрана" : "Display settings"))
+        {
+            OpenAndroidSettings(Android.Provider.Settings.ActionDisplaySettings);
+            return;
+        }
+    }
+
+    private void OpenAndroidSettings(string action)
+    {
+#if ANDROID
         try
         {
-            await Task.Delay(250);
-            // This safely releases unused managed memory belonging to NEBULA BOOST only.
-            var beforeMb = GC.GetTotalMemory(false) / (1024d * 1024d);
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-            var afterMb = GC.GetTotalMemory(true) / (1024d * 1024d);
-
-            RefreshDeviceInfo();
-
-            var summary = GetBoostSummary(beforeMb, afterMb);
-            DeviceNoteLabel.Text = summary;
-            StatusLabel.Text = _isRussian ? "ПРОВЕРЕНО" : "CHECKED";
+            var intent = new Android.Content.Intent(action);
+            intent.AddFlags(ActivityFlags.NewTask);
+            Android.App.Application.Context.StartActivity(intent);
         }
         catch (Exception ex)
         {
-            StatusLabel.Text = _isRussian ? "ОШИБКА" : "ERROR";
-            DeviceNoteLabel.Text = _isRussian
-                ? "Не удалось проверить показатели. Откройте диагностику для подробностей."
-                : "Could not check metrics. Open Diagnostics for details.";
-            await DisplayAlert(_isRussian ? "Ошибка Smart Boost" : "Smart Boost error",
-                ex.Message, _isRussian ? "Закрыть" : "Close");
+            MainThread.BeginInvokeOnMainThread(async () =>
+                await DisplayAlert(_isRussian ? "Настройки недоступны" : "Settings unavailable",
+                    _isRussian
+                        ? "На этом устройстве нет доступной страницы для этого пункта."
+                        : "This device does not provide a settings page for this item.",
+                    _isRussian ? "Закрыть" : "Close"));
         }
-        finally
-        {
-            BoostButton.Text = _isRussian ? "ЗАПУСТИТЬ SMART BOOST" : "RUN SMART BOOST";
-            BoostButton.IsEnabled = true;
-        }
+#else
+        MainThread.BeginInvokeOnMainThread(async () =>
+            await DisplayAlert("NEBULA BOOST", "Android-only feature.", "OK"));
+#endif
     }
 
     private string GetBoostSummary(double beforeMb, double afterMb)
@@ -218,11 +247,13 @@ public partial class MainPage : ContentPage
 #endif
     }
 
-    private async void OnLaunchSelectedGameClicked(object sender, EventArgs e)
+    private async void OnLaunchSelectedGameClicked(object sender, EventArgs e) =>
+        await LaunchSelectedGameAsync();
+
+    private async Task LaunchSelectedGameAsync()
     {
 #if ANDROID
         var packageName = Preferences.Get("selected_game_package", "");
-        var gameName = Preferences.Get("selected_game_name", "");
         if (string.IsNullOrWhiteSpace(packageName))
         {
             await DisplayAlert(_isRussian ? "Игра не выбрана" : "No game selected",
@@ -255,7 +286,10 @@ public partial class MainPage : ContentPage
 #endif
     }
 
-    private async void OnSelectedGameSettingsClicked(object sender, EventArgs e)
+    private async void OnSelectedGameSettingsClicked(object sender, EventArgs e) =>
+        await EditSelectedGameProfileAsync();
+
+    private async Task EditSelectedGameProfileAsync()
     {
         var packageName = Preferences.Get("selected_game_package", "");
         var gameName = Preferences.Get("selected_game_name", "");
@@ -424,7 +458,7 @@ public partial class MainPage : ContentPage
         DeviceNoteLabel.Text = _isRussian
             ? "Показываются только данные, доступные приложению."
             : "Only data available to the app is shown.";
-        BoostButton.Text = _isRussian ? "ЗАПУСТИТЬ SMART BOOST" : "RUN SMART BOOST";
+        BoostButton.Text = _isRussian ? "ОТКРЫТЬ ИГРОВОЙ ЦЕНТР" : "OPEN GAME CENTER";
         DiagnosticsTitleLabel.Text = _isRussian ? "Диагностика" : "Diagnostics";
         DiagnosticsDescLabel.Text = _isRussian ? "Реальные данные устройства" : "Live device information";
         GamesTitleLabel.Text = _isRussian ? "Игры и приложения" : "Games & apps";
@@ -440,7 +474,7 @@ public partial class MainPage : ContentPage
         UpdateGameProfileSummary();
         SettingsTitleLabel.Text = _isRussian ? "НАСТРОЙКИ" : "SETTINGS";
         LanguageLabel.Text = _isRussian ? "Язык интерфейса" : "Interface language";
-        FooterLabel.Text = _isRussian ? "NEBULA BOOST • РАБОЧИЙ ПРОТОТИП" : "NEBULA BOOST • FUNCTIONAL PROTOTYPE";
+        FooterLabel.Text = _isRussian ? "NEBULA BOOST • ИГРОВОЙ ЦЕНТР" : "NEBULA BOOST • GAME CENTER";
 
         RuButton.BackgroundColor = _isRussian ? Color.FromArgb("#FF4B32") : Color.FromArgb("#252B36");
         EnButton.BackgroundColor = !_isRussian ? Color.FromArgb("#FF4B32") : Color.FromArgb("#252B36");
