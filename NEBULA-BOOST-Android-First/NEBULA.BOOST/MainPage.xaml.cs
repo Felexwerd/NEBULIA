@@ -193,6 +193,8 @@ public partial class MainPage : ContentPage
 
             Preferences.Set("selected_game_name", selected.Name);
             Preferences.Set("selected_game_package", selected.Package);
+            SelectedGameActions.IsVisible = true;
+            GamesDescLabel.Text = (_isRussian ? "Выбрано: " : "Selected: ") + selected.Name;
             var launchIntent = pm.GetLaunchIntentForPackage(selected.Package);
             if (launchIntent is not null)
             {
@@ -209,6 +211,72 @@ public partial class MainPage : ContentPage
         catch (Exception ex)
         {
             await DisplayAlert(_isRussian ? "Ошибка библиотеки" : "Game library error",
+                ex.Message, _isRussian ? "Закрыть" : "Close");
+        }
+#else
+        await DisplayAlert("NEBULA BOOST", "Android-only feature.", "OK");
+#endif
+    }
+
+    private async void OnLaunchSelectedGameClicked(object sender, EventArgs e)
+    {
+#if ANDROID
+        var packageName = Preferences.Get("selected_game_package", "");
+        var gameName = Preferences.Get("selected_game_name", "");
+        if (string.IsNullOrWhiteSpace(packageName))
+        {
+            await DisplayAlert(_isRussian ? "Игра не выбрана" : "No game selected",
+                _isRussian ? "Сначала откройте «Игры» и выберите приложение." : "Open Games and select an app first.",
+                _isRussian ? "Понятно" : "OK");
+            return;
+        }
+
+        try
+        {
+            var context = Android.App.Application.Context;
+            var intent = context.PackageManager?.GetLaunchIntentForPackage(packageName);
+            if (intent is null)
+            {
+                await DisplayAlert(_isRussian ? "Не удалось запустить" : "Cannot launch",
+                    _isRussian ? "Android не предоставляет экран запуска для этого приложения." : "Android did not provide a launch activity for this app.",
+                    _isRussian ? "Закрыть" : "Close");
+                return;
+            }
+            intent.AddFlags(ActivityFlags.NewTask);
+            context.StartActivity(intent);
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert(_isRussian ? "Ошибка запуска" : "Launch error", ex.Message,
+                _isRussian ? "Закрыть" : "Close");
+        }
+#else
+        await DisplayAlert("NEBULA BOOST", "Android-only feature.", "OK");
+#endif
+    }
+
+    private async void OnSelectedGameSettingsClicked(object sender, EventArgs e)
+    {
+#if ANDROID
+        var packageName = Preferences.Get("selected_game_package", "");
+        if (string.IsNullOrWhiteSpace(packageName))
+        {
+            await DisplayAlert(_isRussian ? "Игра не выбрана" : "No game selected",
+                _isRussian ? "Сначала выберите приложение в библиотеке игр." : "Select an app in the game library first.",
+                _isRussian ? "Понятно" : "OK");
+            return;
+        }
+
+        try
+        {
+            var intent = new Android.Content.Intent(Android.Provider.Settings.ActionApplicationDetailsSettings);
+            intent.SetData(Android.Net.Uri.Parse("package:" + packageName));
+            intent.AddFlags(ActivityFlags.NewTask);
+            Android.App.Application.Context.StartActivity(intent);
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert(_isRussian ? "Не удалось открыть настройки" : "Could not open settings",
                 ex.Message, _isRussian ? "Закрыть" : "Close");
         }
 #else
@@ -298,6 +366,12 @@ public partial class MainPage : ContentPage
         GamesDescLabel.Text = _isRussian ? "Выбрать и запустить приложение" : "Choose and launch an app";
         DiagnosticsButton.Text = _isRussian ? "ПРОВЕРИТЬ" : "CHECK";
         GamesButton.Text = _isRussian ? "ОТКРЫТЬ" : "OPEN";
+        LaunchSelectedGameButton.Text = _isRussian ? "ЗАПУСТИТЬ ИГРУ" : "LAUNCH GAME";
+        SelectedGameSettingsButton.Text = _isRussian ? "НАСТРОЙКИ ИГРЫ" : "GAME SETTINGS";
+        var selectedGameName = Preferences.Get("selected_game_name", "");
+        SelectedGameActions.IsVisible = !string.IsNullOrWhiteSpace(selectedGameName);
+        if (!string.IsNullOrWhiteSpace(selectedGameName))
+            GamesDescLabel.Text = (_isRussian ? "Выбрано: " : "Selected: ") + selectedGameName;
         SettingsTitleLabel.Text = _isRussian ? "НАСТРОЙКИ" : "SETTINGS";
         LanguageLabel.Text = _isRussian ? "Язык интерфейса" : "Interface language";
         FooterLabel.Text = _isRussian ? "NEBULA BOOST • РАБОЧИЙ ПРОТОТИП" : "NEBULA BOOST • FUNCTIONAL PROTOTYPE";
