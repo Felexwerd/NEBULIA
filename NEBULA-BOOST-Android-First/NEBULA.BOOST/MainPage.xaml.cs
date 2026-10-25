@@ -34,31 +34,97 @@ public partial class MainPage : ContentPage
 
     private async void OnBoostClicked(object sender, EventArgs e)
     {
-        StatusLabel.Text = _isRussian ? "ПРОВЕРКА…" : "CHECKING…";
         BoostButton.IsEnabled = false;
+        BoostButton.Text = _isRussian ? "ИДЁТ ПРОВЕРКА…" : "CHECKING…";
+        StatusLabel.Text = _isRussian ? "АНАЛИЗ…" : "ANALYZING…";
+        DeviceNoteLabel.Text = _isRussian
+            ? "Проверяем доступные показатели устройства…"
+            : "Checking available device metrics…";
+
         try
         {
-            var report = GetSystemReport();
+            await Task.Delay(250);
+            // This safely releases unused managed memory belonging to NEBULA BOOST only.
+            var beforeMb = GC.GetTotalMemory(false) / (1024d * 1024d);
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            var afterMb = GC.GetTotalMemory(true) / (1024d * 1024d);
+
+            RefreshDeviceInfo();
+
+            var summary = GetBoostSummary(beforeMb, afterMb);
+            DeviceNoteLabel.Text = summary;
             StatusLabel.Text = _isRussian ? "ПРОВЕРЕНО" : "CHECKED";
-            var title = _isRussian ? "Результат Smart Boost" : "Smart Boost results";
-            var message = _isRussian
-                ? $"{report}\n\nЧто можно сделать:\n• Закрой лишние приложения вручную.\n• Освободи место, если хранилище почти заполнено.\n• Включи игровой режим производителя, если он есть.\n\nAndroid не разрешает обычному приложению принудительно разгонять CPU/GPU или менять FPS."
-                : $"{report}\n\nRecommended actions:\n• Close unused apps manually.\n• Free storage if it is nearly full.\n• Enable your device maker's game mode if available.\n\nAndroid does not let a regular app force CPU/GPU overclocking or change FPS.";
-            var openSettings = await DisplayAlert(title, message,
-                _isRussian ? "Настройки приложения" : "App settings",
-                _isRussian ? "Закрыть" : "Close");
-            if (openSettings)
-                AppInfo.ShowSettingsUI();
         }
         catch (Exception ex)
         {
-            await DisplayAlert(_isRussian ? "Ошибка проверки" : "Check failed",
+            StatusLabel.Text = _isRussian ? "ОШИБКА" : "ERROR";
+            DeviceNoteLabel.Text = _isRussian
+                ? "Не удалось проверить показатели. Откройте диагностику для подробностей."
+                : "Could not check metrics. Open Diagnostics for details.";
+            await DisplayAlert(_isRussian ? "Ошибка Smart Boost" : "Smart Boost error",
                 ex.Message, _isRussian ? "Закрыть" : "Close");
         }
         finally
         {
+            BoostButton.Text = _isRussian ? "ЗАПУСТИТЬ SMART BOOST" : "RUN SMART BOOST";
             BoostButton.IsEnabled = true;
         }
+    }
+
+    private string GetBoostSummary(double beforeMb, double afterMb)
+    {
+        var lines = new List<string>();
+        lines.Add(_isRussian
+            ? $"Проверка завершена. Память приложения: {afterMb:0} МБ."
+            : $"Check complete. App memory: {afterMb:0} MB.");
+
+        if (beforeMb > afterMb + 1)
+            lines.Add(_isRussian
+                ? $"Освобождено около {beforeMb - afterMb:0} МБ памяти самого NEBULA BOOST."
+                : $"Released about {beforeMb - afterMb:0} MB used by NEBULA BOOST itself.");
+        else
+            lines.Add(_isRussian
+                ? "Очистка памяти самого NEBULA BOOST выполнена; заметного изменения не потребовалось."
+                : "NEBULA BOOST's own memory cleanup ran; no significant change was needed.");
+
+#if ANDROID
+        try
+        {
+            var context = Android.App.Application.Context;
+            var manager = context.GetSystemService(Context.ActivityService) as ActivityManager;
+            var memory = new ActivityManager.MemoryInfo();
+            manager?.GetMemoryInfo(memory);
+            if (manager is not null)
+            {
+                var availableGb = memory.AvailMem / 1024d / 1024d / 1024d;
+                var totalGb = memory.TotalMem / 1024d / 1024d / 1024d;
+                lines.Add(_isRussian
+                    ? $"Свободная системная ОЗУ: {availableGb:0.0} из {totalGb:0.0} ГБ."
+                    : $"Available system RAM: {availableGb:0.0} of {totalGb:0.0} GB.");
+                if (memory.LowMemory)
+                    lines.Add(_isRussian
+                        ? "Android сообщает о нехватке памяти. Закройте ненужные приложения."
+                        : "Android reports low memory. Close apps you don't need.");
+            }
+
+            var stat = new Android.OS.StatFs(Android.OS.Environment.DataDirectory!.AbsolutePath);
+            var freeGb = stat.AvailableBytes / 1024d / 1024d / 1024d;
+            var totalStorageGb = stat.TotalBytes / 1024d / 1024d / 1024d;
+            lines.Add(_isRussian
+                ? $"Свободное хранилище: {freeGb:0.0} из {totalStorageGb:0.0} ГБ."
+                : $"Free storage: {freeGb:0.0} of {totalStorageGb:0.0} GB.");
+        }
+        catch
+        {
+            // Keep the successful app-memory check even if an optional Android metric is unavailable.
+        }
+#endif
+        lines.Add(_isRussian
+            ? "Важно: Android не разрешает этому приложению принудительно закрывать другие приложения или разгонять CPU/GPU."
+            : "Note: Android does not allow this app to force-stop other apps or overclock the CPU/GPU.");
+        return string.Join("\n", lines);
     }
 
     private async void OnDiagnosticsClicked(object sender, EventArgs e)
