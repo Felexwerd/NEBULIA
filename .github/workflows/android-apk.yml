@@ -1,0 +1,56 @@
+name: Build NEBULA BOOST Android APK
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'NEBULA-BOOST-Android-First/**'
+      - '.github/workflows/android-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install MAUI Android workload
+        run: dotnet workload install maui-android
+
+      - name: Restore project
+        run: dotnet restore "NEBULA-BOOST-Android-First/NEBULA.BOOST/NEBULA.BOOST.csproj"
+
+      - name: Build APK
+        run: dotnet publish "NEBULA-BOOST-Android-First/NEBULA.BOOST/NEBULA.BOOST.csproj" -f net10.0-android -c Release -p:AndroidPackageFormat=apk
+
+      - name: Locate APK
+        shell: pwsh
+        run: |
+          $apk = Get-ChildItem -Path "NEBULA-BOOST-Android-First/NEBULA.BOOST/bin/Release/net10.0-android" -Recurse -Filter *.apk |
+            Where-Object { $_.FullName -match "publish" } |
+            Select-Object -First 1
+          if (-not $apk) {
+            $apk = Get-ChildItem -Path "NEBULA-BOOST-Android-First/NEBULA.BOOST/bin/Release/net10.0-android" -Recurse -Filter *.apk |
+              Select-Object -First 1
+          }
+          if (-not $apk) { throw "APK was not produced by dotnet publish." }
+          New-Item -ItemType Directory -Force -Path "artifacts" | Out-Null
+          Copy-Item $apk.FullName "artifacts/NEBULA-BOOST.apk"
+          Write-Host "APK ready: $($apk.FullName)"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NEBULA-BOOST-Android-APK
+          path: artifacts/NEBULA-BOOST.apk
+          if-no-files-found: error
+          retention-days: 14
