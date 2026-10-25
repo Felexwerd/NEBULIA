@@ -67,16 +67,6 @@
                     BackgroundColor="{StaticResource Accent}" TextColor="White"
                     FontAttributes="Bold" FontSize="15" CornerRadius="16" HeightRequest="58"/>
 
-            <Grid x:Name="SelectedGameActions" ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="False">
-                <Button x:Name="LaunchSelectedGameButton" Text="ЗАПУСТИТЬ ИГРУ"
-                        Clicked="OnLaunchSelectedGameClicked" BackgroundColor="#252B36"
-                        TextColor="White" FontAttributes="Bold" FontSize="11"
-                        CornerRadius="12" HeightRequest="46"/>
-                <Button x:Name="SelectedGameSettingsButton" Grid.Column="1" Text="ПРОФИЛЬ ИГРЫ"
-                        Clicked="OnSelectedGameSettingsClicked" BackgroundColor="#252B36"
-                        TextColor="White" FontAttributes="Bold" FontSize="11"
-                        CornerRadius="12" HeightRequest="46"/>
-            </Grid>
             <Border x:Name="GameProfileCard" IsVisible="False" BackgroundColor="{StaticResource PanelAlt}"
                     Stroke="#353B47" StrokeThickness="1" StrokeShape="RoundRectangle 14" Padding="13">
                 <VerticalStackLayout Spacing="5">
@@ -105,11 +95,11 @@
                         StrokeShape="RoundRectangle 18" Padding="15">
                     <VerticalStackLayout Spacing="8">
                         <Label Text="⌘" TextColor="{StaticResource Accent2}" FontSize="24"/>
-                        <Label x:Name="GamesTitleLabel" Text="My Games" TextColor="{StaticResource TextMain}"
+                        <Label x:Name="GamesTitleLabel" Text="Game Tips" TextColor="{StaticResource TextMain}"
                                FontSize="15" FontAttributes="Bold"/>
-                        <Label x:Name="GamesDescLabel" Text="Game profiles and tips" TextColor="{StaticResource TextMuted}"
+                        <Label x:Name="GamesDescLabel" Text="Advice for your selected game" TextColor="{StaticResource TextMuted}"
                                FontSize="11"/>
-                        <Button x:Name="GamesButton" Text="OPEN" Clicked="OnGamesClicked"
+                        <Button x:Name="GamesButton" Text="VIEW TIPS" Clicked="OnTipsClicked"
                                 BackgroundColor="#252B36" TextColor="White" FontSize="11"
                                 FontAttributes="Bold" CornerRadius="10" HeightRequest="38"/>
                     </VerticalStackLayout>
