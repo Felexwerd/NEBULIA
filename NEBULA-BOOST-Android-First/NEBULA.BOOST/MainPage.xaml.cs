@@ -456,7 +456,7 @@ public partial class MainPage : ContentPage
         BoostButton.Text = _isRussian ? "ОТКРЫТЬ ИГРОВОЙ ЦЕНТР" : "OPEN GAME CENTER";
         DiagnosticsTitleLabel.Text = _isRussian ? "Диагностика" : "Diagnostics";
         DiagnosticsDescLabel.Text = _isRussian ? "Реальные данные устройства" : "Live device information";
-        GamesTitleLabel.Text = _isRussian ? "Игры и приложения" : "Games & apps";
+        GamesTitleLabel.Text = _isRussian ? "Игровые советы" : "Game Tips";
         GamesDescLabel.Text = _isRussian ? "Советы для выбранной игры" : "Tips for your selected game";
         DiagnosticsButton.Text = _isRussian ? "ПРОВЕРИТЬ" : "CHECK";
         GamesButton.Text = _isRussian ? "СОВЕТЫ" : "VIEW TIPS";
