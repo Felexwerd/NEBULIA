@@ -257,8 +257,8 @@ public partial class MainPage : ContentPage
 
     private async void OnSelectedGameSettingsClicked(object sender, EventArgs e)
     {
-#if ANDROID
         var packageName = Preferences.Get("selected_game_package", "");
+        var gameName = Preferences.Get("selected_game_name", "");
         if (string.IsNullOrWhiteSpace(packageName))
         {
             await DisplayAlert(_isRussian ? "Игра не выбрана" : "No game selected",
@@ -267,21 +267,86 @@ public partial class MainPage : ContentPage
             return;
         }
 
-        try
+        var graphics = Preferences.Get(ProfileKey(packageName, "graphics"), "Balanced");
+        var fps = Preferences.Get(ProfileKey(packageName, "fps"), "60");
+        var touch = Preferences.Get(ProfileKey(packageName, "touch"), "Normal");
+        var power = Preferences.Get(ProfileKey(packageName, "power"), "Balanced");
+
+        var graphicsChoice = await DisplayActionSheet(
+            _isRussian ? $"Профиль: {gameName} — графика" : $"Profile: {gameName} — graphics",
+            _isRussian ? "Отмена" : "Cancel", null,
+            _isRussian ? new[] { "Производительность", "Баланс", "Качество" } : new[] { "Performance", "Balanced", "Quality" });
+        if (string.IsNullOrWhiteSpace(graphicsChoice) || graphicsChoice == (_isRussian ? "Отмена" : "Cancel")) return;
+        graphics = graphicsChoice == (_isRussian ? "Производительность" : "Performance") ? "Performance"
+            : graphicsChoice == (_isRussian ? "Качество" : "Quality") ? "Quality" : "Balanced";
+
+        var fpsChoice = await DisplayActionSheet(
+            _isRussian ? "Целевой FPS (рекомендация)" : "Target FPS (recommendation)",
+            _isRussian ? "Оставить" : "Keep current", null, "30", "60", "90", "120");
+        if (!string.IsNullOrWhiteSpace(fpsChoice) && fpsChoice != (_isRussian ? "Оставить" : "Keep current"))
+            fps = fpsChoice;
+
+        var touchChoice = await DisplayActionSheet(
+            _isRussian ? "Чувствительность управления" : "Control sensitivity",
+            _isRussian ? "Оставить" : "Keep current", null,
+            _isRussian ? new[] { "Низкая", "Обычная", "Высокая" } : new[] { "Low", "Normal", "High" });
+        if (!string.IsNullOrWhiteSpace(touchChoice) && touchChoice != (_isRussian ? "Оставить" : "Keep current"))
+            touch = touchChoice == (_isRussian ? "Низкая" : "Low") ? "Low"
+                : touchChoice == (_isRussian ? "Высокая" : "High") ? "High" : "Normal";
+
+        var powerChoice = await DisplayActionSheet(
+            _isRussian ? "Приоритет профиля" : "Profile priority",
+            _isRussian ? "Оставить" : "Keep current", null,
+            _isRussian ? new[] { "Производительность", "Баланс батареи" } : new[] { "Performance", "Battery balance" });
+        if (!string.IsNullOrWhiteSpace(powerChoice) && powerChoice != (_isRussian ? "Оставить" : "Keep current"))
+            power = powerChoice == (_isRussian ? "Производительность" : "Performance") ? "Performance" : "Balanced";
+
+        Preferences.Set(ProfileKey(packageName, "graphics"), graphics);
+        Preferences.Set(ProfileKey(packageName, "fps"), fps);
+        Preferences.Set(ProfileKey(packageName, "touch"), touch);
+        Preferences.Set(ProfileKey(packageName, "power"), power);
+        UpdateGameProfileSummary();
+
+        await DisplayAlert(_isRussian ? "Профиль сохранён" : "Profile saved",
+            _isRussian
+                ? $"Настройки профиля для {gameName} сохранены на этом устройстве. Это рекомендации NEBULA BOOST: они не меняют графику или FPS внутри самой игры автоматически."
+                : $"The profile for {gameName} is saved on this device. These are NEBULA BOOST recommendations; they do not automatically change the game's graphics or FPS.",
+            _isRussian ? "Готово" : "Done");
+    }
+
+    private static string ProfileKey(string packageName, string setting) =>
+        $"game_profile_{packageName}_{setting}";
+
+    private void UpdateGameProfileSummary()
+    {
+        var packageName = Preferences.Get("selected_game_package", "");
+        if (string.IsNullOrWhiteSpace(packageName))
         {
-            var intent = new Android.Content.Intent(Android.Provider.Settings.ActionApplicationDetailsSettings);
-            intent.SetData(Android.Net.Uri.Parse("package:" + packageName));
-            intent.AddFlags(ActivityFlags.NewTask);
-            Android.App.Application.Context.StartActivity(intent);
+            GameProfileCard.IsVisible = false;
+            return;
         }
-        catch (Exception ex)
+
+        var graphics = Preferences.Get(ProfileKey(packageName, "graphics"), "Balanced");
+        var fps = Preferences.Get(ProfileKey(packageName, "fps"), "60");
+        var touch = Preferences.Get(ProfileKey(packageName, "touch"), "Normal");
+        var power = Preferences.Get(ProfileKey(packageName, "power"), "Balanced");
+
+        string Local(string value) => !_isRussian ? value : value switch
         {
-            await DisplayAlert(_isRussian ? "Не удалось открыть настройки" : "Could not open settings",
-                ex.Message, _isRussian ? "Закрыть" : "Close");
-        }
-#else
-        await DisplayAlert("NEBULA BOOST", "Android-only feature.", "OK");
-#endif
+            "Performance" => "Производительность",
+            "Balanced" => "Баланс",
+            "Quality" => "Качество",
+            "Low" => "Низкая",
+            "Normal" => "Обычная",
+            "High" => "Высокая",
+            _ => value
+        };
+
+        GameProfileHeadingLabel.Text = _isRussian ? "СОХРАНЁННЫЙ ПРОФИЛЬ ИГРЫ" : "SAVED GAME PROFILE";
+        GameProfileSummaryLabel.Text = _isRussian
+            ? $"Графика: {Local(graphics)} • Цель FPS: {fps} • Управление: {Local(touch)} • Приоритет: {Local(power)}\nПараметры сохранены как рекомендации."
+            : $"Graphics: {graphics} • FPS target: {fps} • Controls: {touch} • Priority: {power}\nSaved as recommendations.";
+        GameProfileCard.IsVisible = true;
     }
 
     private string GetSystemReport()
@@ -367,11 +432,12 @@ public partial class MainPage : ContentPage
         DiagnosticsButton.Text = _isRussian ? "ПРОВЕРИТЬ" : "CHECK";
         GamesButton.Text = _isRussian ? "ОТКРЫТЬ" : "OPEN";
         LaunchSelectedGameButton.Text = _isRussian ? "ЗАПУСТИТЬ ИГРУ" : "LAUNCH GAME";
-        SelectedGameSettingsButton.Text = _isRussian ? "НАСТРОЙКИ ИГРЫ" : "GAME SETTINGS";
+        SelectedGameSettingsButton.Text = _isRussian ? "ПРОФИЛЬ ИГРЫ" : "GAME PROFILE";
         var selectedGameName = Preferences.Get("selected_game_name", "");
         SelectedGameActions.IsVisible = !string.IsNullOrWhiteSpace(selectedGameName);
         if (!string.IsNullOrWhiteSpace(selectedGameName))
             GamesDescLabel.Text = (_isRussian ? "Выбрано: " : "Selected: ") + selectedGameName;
+        UpdateGameProfileSummary();
         SettingsTitleLabel.Text = _isRussian ? "НАСТРОЙКИ" : "SETTINGS";
         LanguageLabel.Text = _isRussian ? "Язык интерфейса" : "Interface language";
         FooterLabel.Text = _isRussian ? "NEBULA BOOST • РАБОЧИЙ ПРОТОТИП" : "NEBULA BOOST • FUNCTIONAL PROTOTYPE";
