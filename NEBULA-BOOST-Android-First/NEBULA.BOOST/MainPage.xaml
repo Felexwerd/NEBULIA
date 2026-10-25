@@ -67,6 +67,17 @@
                     BackgroundColor="{StaticResource Accent}" TextColor="White"
                     FontAttributes="Bold" FontSize="15" CornerRadius="16" HeightRequest="58"/>
 
+            <Grid x:Name="SelectedGameActions" ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="False">
+                <Button x:Name="LaunchSelectedGameButton" Text="ЗАПУСТИТЬ ИГРУ"
+                        Clicked="OnLaunchSelectedGameClicked" BackgroundColor="#252B36"
+                        TextColor="White" FontAttributes="Bold" FontSize="11"
+                        CornerRadius="12" HeightRequest="46"/>
+                <Button x:Name="SelectedGameSettingsButton" Grid.Column="1" Text="НАСТРОЙКИ ИГРЫ"
+                        Clicked="OnSelectedGameSettingsClicked" BackgroundColor="#252B36"
+                        TextColor="White" FontAttributes="Bold" FontSize="11"
+                        CornerRadius="12" HeightRequest="46"/>
+            </Grid>
+
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                 <Border BackgroundColor="{StaticResource Panel}" Stroke="#292F3A" StrokeThickness="1"
                         StrokeShape="RoundRectangle 18" Padding="15">
